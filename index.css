@@ -1,8 +1,8 @@
-/* Heading font: Playfair Display via Google Fonts */
+/* Heading font: Plus Jakarta Sans / Inter (default sans) */
 /* Loaded in index.html using the Google Fonts link */
 
 :root {
-  --heading-font: 'Playfair Display', 'Plus Jakarta Sans', 'Inter', serif;
+  --heading-font: 'Plus Jakarta Sans', 'Inter', 'sans-serif';
 }
 
 /* Apply brand heading font to all headers */

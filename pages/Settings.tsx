@@ -252,7 +252,7 @@ const Settings: React.FC = () => {
             Sign out
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-3">If signed out, the app will fall back to anonymous sign-in.</p>
+
       </div>
 
       {/* Data Management */}

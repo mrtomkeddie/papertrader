@@ -3,8 +3,8 @@ dotenv.config({ path: '.env.local' });
 dotenv.config();
 import { SELECTED_INSTRUMENTS, SELECTED_METHODS } from '../constants';
 import { getAiTradeAction } from '../services/geminiService';
-import { executeAiTrade } from '../services/tradingService';
-import * as db from '../services/database';
+import { executeAiTrade } from './tradingServiceAdmin';
+import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
 
 // Read env flags from either AUTOPILOT_* or VITE_AUTOPILOT_*

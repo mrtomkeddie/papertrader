@@ -3,6 +3,7 @@ import { useDatabase } from '../hooks/useDatabase';
 import * as db from '../services/database';
 import { Position, Side, PositionStatus } from '../types';
 import { Link } from 'react-router-dom';
+import DatePicker from '../components/DatePicker';
 
 const Trades: React.FC = () => {
   const { data: positions, loading, error } = useDatabase<Position[]>('positions');
@@ -142,12 +143,10 @@ const Trades: React.FC = () => {
           {/* Desktop date range inline */}
           <div className="hidden sm:grid sm:grid-cols-2 sm:gap-3">
             <div className="flex flex-col">
-              <label className="text-xs text-gray-400">Start date</label>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-gray-900 text-gray-200 rounded px-2 py-1" />
+              <DatePicker label="Start date" value={startDate} onChange={setStartDate} />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-gray-400">End date</label>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="bg-gray-900 text-gray-200 rounded px-2 py-1" />
+              <DatePicker label="End date" value={endDate} onChange={setEndDate} />
             </div>
           </div>
         </div>
@@ -155,12 +154,10 @@ const Trades: React.FC = () => {
         {/* Mobile date range collapsible */}
         <div className={`${filtersExpanded ? 'grid' : 'hidden'} grid-cols-2 gap-3 mt-3 sm:hidden`}>
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400">Start date</label>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-gray-900 text-gray-200 rounded px-2 py-2" />
+            <DatePicker label="Start date" value={startDate} onChange={setStartDate} />
           </div>
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400">End date</label>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="bg-gray-900 text-gray-200 rounded px-2 py-2" />
+            <DatePicker label="End date" value={endDate} onChange={setEndDate} />
           </div>
         </div>
       </div>

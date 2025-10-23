@@ -5,6 +5,7 @@ import * as db from '../services/database'; // Now uses Firestore-backed functio
 import { Side, PositionStatus, Position, Explanation, Strategy } from '../types';
 import TradingViewWidget from '../components/TradingViewWidget';
 import { generateExplanationText, generateFailureAnalysis } from '../services/geminiService';
+import AnnotatedChart from '../components/AnnotatedChart';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color = 'text-white' }) => (
   <div>
@@ -172,6 +173,18 @@ const PositionDetail: React.FC = () => {
 
       <div className="bg-gray-800 rounded-lg sm:rounded-xl shadow-lg h-[320px] sm:h-[420px] lg:h-[500px]">
         <TradingViewWidget symbol={position.symbol} timeframe={strategy?.timeframe} />
+      </div>
+      <div className="bg-gray-800 rounded-lg sm:rounded-xl shadow-lg h-[320px] sm:h-[420px] lg:h-[500px]">
+        <AnnotatedChart
+          symbol={position.symbol}
+          timeframe={strategy?.timeframe}
+          side={position.side}
+          entryPrice={position.entry_price}
+          stopPrice={position.stop_price}
+          tpPrice={position.tp_price}
+          entryTs={position.entry_ts}
+          exitTs={position.exit_ts}
+        />
       </div>
     </div>
   );
