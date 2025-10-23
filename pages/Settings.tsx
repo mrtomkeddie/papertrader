@@ -5,6 +5,9 @@ import { handleWebhook, runPriceCheck } from '../services/tradingService';
 import { TradingViewPayload, Strategy, Signal, Position, Explanation, LedgerEntry, StopLogic } from '../types';
 import { collection, getDocs, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db as firestoreDb } from '../services/firebase';
+// Add auth imports
+import { auth, signInWithGoogle, signOutUser } from '../services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const Settings: React.FC = () => {
   const [response, setResponse] = useState<{message: string, type: 'success' | 'error'} | null>(null);
@@ -16,6 +19,19 @@ const Settings: React.FC = () => {
     atr: 1.25
   }, null, 2));
   const webhookUrl = `${window.location.origin}${window.location.pathname}#/?webhook_key=${WEBHOOK_KEY}`;
+
+  // Auth state
+  const [userInfo, setUserInfo] = useState<{ uid: string; isAnonymous: boolean; providers: string[] } | null>(null);
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserInfo({ uid: user.uid, isAnonymous: user.isAnonymous, providers: (user.providerData || []).map(p => p.providerId) });
+      } else {
+        setUserInfo(null);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Ensure the test symbol has an active strategy
   const ensureActiveStrategyForSymbol = async (symbol: string): Promise<string | undefined> => {
@@ -213,6 +229,33 @@ const Settings: React.FC = () => {
     <div className="space-y-8 max-w-4xl mx-auto">
       <h2 className="text-2xl sm:text-3xl font-bold text-white">Settings</h2>
 
+      {/* Account & Security */}
+      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">Account & Security</h3>
+        <p className="text-gray-400 mb-4">
+          You are {userInfo?.isAnonymous ? 'signed in anonymously' : 'signed in'}.
+          {userInfo && (
+            <span className="ml-1">UID: <code className="text-gray-300">{userInfo.uid}</code></span>
+          )}
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={() => signInWithGoogle()}
+            className="px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-center leading-tight"
+          >
+            Sign in with Google
+          </button>
+          <button
+            onClick={() => signOutUser()}
+            className="px-4 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition text-center leading-tight"
+          >
+            Sign out
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-3">If signed out, the app will fall back to anonymous sign-in.</p>
+      </div>
+
+      {/* Data Management */}
       <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
         <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">Data Management</h3>
         <p className="text-gray-400 mb-4">
