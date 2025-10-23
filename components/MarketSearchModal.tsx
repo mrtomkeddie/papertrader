@@ -46,7 +46,7 @@ const MarketSearchModal: React.FC<MarketSearchModalProps> = ({ isOpen, onSelectS
       onClick={onClose}
     >
       <div 
-        className="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+        className="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col mx-4 sm:mx-6"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
       >
         <div className="p-4 border-b border-gray-700">

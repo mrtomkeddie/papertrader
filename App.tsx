@@ -19,7 +19,10 @@ const App: React.FC = () => {
     <HashRouter>
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-gray-200 font-sans">
         <aside className="fixed top-0 left-0 h-screen md:w-64 w-20 bg-gray-800/80 backdrop-blur-sm border-r border-white/10 p-4 flex flex-col">
-          <h1 className="text-2xl font-bold text-primary-light mb-8 hidden md:block">Paper Trader</h1>
+          <img src="/fav.svg" alt="Paper Trader icon" className="h-8 w-8 mb-6 mx-auto md:hidden" />
+          <div className="mb-8 hidden md:flex items-center justify-center">
+            <img src="/ptlogo.png" alt="Paper Trader logo" className="h-12 w-auto" />
+          </div>
           <nav className="flex flex-col space-y-2">
             <NavItem to="/" icon={<DashboardIcon />}>Dashboard</NavItem>
             {/* Conditionally show Market Scanner */}

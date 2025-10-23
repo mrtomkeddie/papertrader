@@ -1,0 +1,13 @@
+/* Heading font: Playfair Display via Google Fonts */
+/* Loaded in index.html using the Google Fonts link */
+
+:root {
+  --heading-font: 'Playfair Display', 'Plus Jakarta Sans', 'Inter', serif;
+}
+
+/* Apply brand heading font to all headers */
+h1, h2, h3, h4, h5, h6,
+.font-heading,
+.heading {
+  font-family: var(--heading-font);
+}

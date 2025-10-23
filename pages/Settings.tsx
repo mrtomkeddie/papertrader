@@ -211,10 +211,10 @@ const Settings: React.FC = () => {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      <h2 className="text-3xl font-bold text-white">Settings</h2>
+      <h2 className="text-2xl sm:text-3xl font-bold text-white">Settings</h2>
 
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h3 className="text-xl font-semibold mb-2 text-primary-light">Data Management</h3>
+      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">Data Management</h3>
         <p className="text-gray-400 mb-4">
           Export your trading data for backup, or import a previous backup. You can also clear all data to start fresh.
         </p>
@@ -238,8 +238,8 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h3 className="text-xl font-semibold mb-2 text-primary-light">Your Webhook URL</h3>
+      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">Your Webhook URL</h3>
         <p className="text-gray-400 mb-4">
           This application simulates a backend endpoint. For a real application, you would post to a server.
           For this simulation, use the "Test Webhook" form in the Manual Controls section.
@@ -249,20 +249,20 @@ const Settings: React.FC = () => {
         </div>
       </div>
       
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h3 className="text-xl font-semibold mb-2 text-primary-light">TradingView Alert Message</h3>
+      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">TradingView Alert Message</h3>
         <p className="text-gray-400 mb-4">
           Copy and paste this JSON into the "Message" box for your alerts in TradingView.
           Ensure your chart has an ATR indicator plotted for the ATR value to work.
         </p>
-        <pre className="bg-gray-900 p-4 rounded-md text-sm text-gray-300 overflow-x-auto">
+        <pre className="bg-gray-900 p-3 sm:p-4 rounded-md text-sm text-gray-300 overflow-x-auto">
           <code>{`${PINE_SCRIPT_ALERT_MESSAGE}`}</code>
         </pre>
       </div>
 
-       <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h3 className="text-xl font-semibold mb-2 text-primary-light">Manual Controls</h3>
-        <div className="flex space-x-4">
+       <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">Manual Controls</h3>
+        <div className="flex space-x-3 sm:space-x-4">
             <button
               onClick={handleRunPriceCheck}
               className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-center leading-tight"
@@ -271,7 +271,7 @@ const Settings: React.FC = () => {
             </button>
         </div>
         
-        <h4 className="text-lg font-semibold mt-6 mb-2">Test Webhook</h4>
+        <h4 className="text-base sm:text-lg font-semibold mt-6 mb-2">Test Webhook</h4>
         <form onSubmit={handleTestWebhook}>
             <textarea
                 value={testPayload}

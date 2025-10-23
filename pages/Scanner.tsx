@@ -132,18 +132,18 @@ const Scanner: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between">
         <h2 className="text-3xl font-bold text-white">Smart Market Scanner</h2>
       </div>
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <div className="flex justify-between items-start mb-4">
+      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4">
             <div>
                 <h3 className="text-lg font-semibold text-primary-light">Optimal Trading Windows</h3>
                 <p className="text-gray-400 max-w-4xl mt-1">
                   Times are shown in your local timezone ({timezone}).
                 </p>
             </div>
-             <div className="text-right flex-shrink-0">
+             <div className="text-left sm:text-right flex-shrink-0 mt-3 sm:mt-0">
                 <p className="text-lg font-mono text-gray-200">
                     {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </p>
@@ -155,7 +155,7 @@ const Scanner: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Forex Card */}
-          <div className="bg-gray-900/50 p-4 rounded-lg flex items-center space-x-4">
+          <div className="bg-gray-900/50 p-3 sm:p-4 rounded-lg sm:rounded-xl flex items-center space-x-4">
             <div className="text-primary-light"><GlobeIcon /></div>
             <div>
               <h4 className="font-bold text-white">Forex Markets</h4>
@@ -166,7 +166,7 @@ const Scanner: React.FC = () => {
             </div>
           </div>
           {/* Crypto Card */}
-          <div className="bg-gray-900/50 p-4 rounded-lg flex items-center space-x-4">
+          <div className="bg-gray-900/50 p-3 sm:p-4 rounded-lg sm:rounded-xl flex items-center space-x-4">
             <div className="text-primary-light"><CoinIcon /></div>
             <div>
               <h4 className="font-bold text-white">Crypto Markets</h4>
@@ -199,7 +199,7 @@ const Scanner: React.FC = () => {
           <button 
             onClick={handleScan} 
             disabled={isScanning}
-            className="w-full p-10 text-white rounded-lg hover:bg-primary-darker/60 bg-primary-dark/40 transition-all duration-300 disabled:bg-gray-700 disabled:cursor-not-allowed text-2xl font-semibold flex items-center justify-center group border-2 border-primary-dark/50 hover:border-primary-dark"
+            className="w-full p-6 sm:p-10 text-white rounded-lg hover:bg-primary-darker/60 bg-primary-dark/40 transition-all duration-300 disabled:bg-gray-700 disabled:cursor-not-allowed text-xl sm:text-2xl font-semibold flex items-center justify-center group border-2 border-primary-dark/50 hover:border-primary-dark"
           >
             <div className="flex flex-col items-center space-y-3 transform group-hover:scale-105 transition-transform duration-200">
               <SparklesIcon />
@@ -218,7 +218,7 @@ const Scanner: React.FC = () => {
       {opportunities.length > 0 && !isScanning && (
         <div className="space-y-4 pt-6">
           <h3 className="text-2xl font-bold text-white">All Found Opportunities</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {opportunities.map(op => (
               <OpportunityCard key={op.symbol} opportunity={op} onAnalyze={handleAnalyze} />
             ))}
@@ -239,10 +239,10 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onAnalyz
   if (!trade) return null;
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col justify-between">
+    <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg flex flex-col justify-between">
       <div>
         <div className="flex justify-between items-start mb-3">
-          <h4 className="text-xl font-bold text-white">{opportunity.symbol}</h4>
+          <h4 className="text-lg sm:text-xl font-bold text-white">{opportunity.symbol}</h4>
           <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${trade.side === Side.LONG ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
             {trade.side}
           </span>
@@ -255,7 +255,7 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onAnalyz
       </div>
       <button 
         onClick={() => onAnalyze(opportunity)}
-        className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+        className="mt-4 w-full px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
       >
         Analyze on Dashboard
       </button>

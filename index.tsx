@@ -1,7 +1,11 @@
+import { registerSW } from 'virtual:pwa-register';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { initDb } from './services/database';
+
+// Register the PWA service worker manually
+registerSW({ immediate: true });
 
 // Render the app immediately; seed the database asynchronously
 const rootElement = document.getElementById('root');

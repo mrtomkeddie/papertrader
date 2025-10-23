@@ -54,7 +54,7 @@ const Strategies: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-white">Webhook Strategy Profiles</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white">Webhook Strategy Profiles</h2>
         <button onClick={() => openModal()} className="px-4 py-2 bg-primary-dark text-white rounded-md hover:bg-primary-darker transition text-center leading-tight">
           Add Profile
         </button>
@@ -66,7 +66,7 @@ const Strategies: React.FC = () => {
           For AI-driven trades on the Dashboard, risk is set directly, and the AI determines all other parameters.
       </p>
 
-      <div className="bg-gray-800 rounded-lg shadow-lg overflow-x-auto">
+      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg overflow-x-auto">
         <table className="min-w-full">
           <thead className="bg-gray-700">
             <tr>
@@ -133,10 +133,10 @@ const StrategyModal: React.FC<{ strategy: Strategy | null, onSave: (strategy: St
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-            <div className="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-lg">
-                <h3 className="text-xl font-bold mb-6">{strategy ? 'Edit' : 'Add'} Webhook Profile</h3>
+            <div className="bg-gray-800 rounded-lg sm:rounded-xl shadow-xl p-4 sm:p-8 w-full max-w-lg">
+                <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">{strategy ? 'Edit' : 'Add'} Webhook Profile</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         <InputField label="Profile Name" name="name" value={formState.name} onChange={handleChange} />
                         <InputField label="Symbol Match" name="symbol" value={formState.symbol} onChange={handleChange} placeholder="e.g., AAPL" />
                         <InputField label="Timeframe" name="timeframe" value={formState.timeframe} onChange={handleChange} placeholder="e.g., 5m, 1H, 1D" />
@@ -152,12 +152,12 @@ const StrategyModal: React.FC<{ strategy: Strategy | null, onSave: (strategy: St
                         <InputField label="Take Profit (R)" name="take_profit_R" type="number" value={formState.take_profit_R} onChange={handleChange} step="0.1" />
                         <InputField label="Slippage (bps)" name="slippage_bps" type="number" value={formState.slippage_bps} onChange={handleChange} />
                         <InputField label="Fee (bps)" name="fee_bps" type="number" value={formState.fee_bps} onChange={handleChange} />
-                        <div className="flex items-center space-x-3 pt-6">
+                        <div className="flex items-center space-x-3 pt-4 sm:pt-6">
                             <input type="checkbox" id="enabled" name="enabled" checked={formState.enabled} onChange={handleChange} className="h-4 w-4 rounded border-gray-400 text-primary focus:ring-primary" />
                             <label htmlFor="enabled" className="text-sm text-gray-300">Enabled for Webhooks</label>
                         </div>
                     </div>
-                    <div className="flex justify-end space-x-3 pt-6">
+                    <div className="flex justify-end space-x-3 pt-4 sm:pt-6">
                         <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-500 text-center leading-tight">Cancel</button>
                         <button type="submit" className="px-4 py-2 bg-primary-dark rounded-md hover:bg-primary-darker text-center leading-tight">Save</button>
                     </div>

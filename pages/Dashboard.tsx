@@ -219,8 +219,8 @@ const Dashboard: React.FC = () => {
           setIsMarketModalOpen(false);
         }}
       />
-      <h2 className="text-3xl font-bold text-white">Dashboard</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <h2 className="text-2xl sm:text-3xl font-bold text-white">Dashboard</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-6">
         <DashboardCard title="Total P&L" value={`£${stats.totalPnl.toFixed(2)}`} changeType={stats.totalPnl >= 0 ? 'positive' : 'negative'} />
         <DashboardCard title="Win Rate" value={`${stats.winRate.toFixed(1)}%`} />
         <DashboardCard title="Average R" value={`${stats.avgR.toFixed(2)}R`} />
@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Active Configuration summary */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Active Configuration</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -260,9 +260,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Session Countdown */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-900/50 p-4 rounded-lg">
+          <div className="bg-gray-900/50 p-3 sm:p-4 rounded-lg">
             <h4 className="font-bold text-white mb-2">Forex</h4>
             <p className="text-sm text-gray-400">Optimal: {formatUtcHourToLocal(12)} - {formatUtcHourToLocal(20)} (Mon-Fri)</p>
             {isForexHours(now) ? (
@@ -281,7 +281,7 @@ const Dashboard: React.FC = () => {
                 </>
               )}
           </div>
-          <div className="bg-gray-900/50 p-4 rounded-lg">
+          <div className="bg-gray-900/50 p-3 sm:p-4 rounded-lg">
             <h4 className="font-bold text-white mb-2">Crypto</h4>
             <p className="text-sm text-gray-400">Optimal: {formatUtcHourToLocal(13)} - {formatUtcHourToLocal(22)} (Daily)</p>
             {isCryptoHours(now) ? (
@@ -305,7 +305,7 @@ const Dashboard: React.FC = () => {
 
       {/* Optional Market browser */}
       {ENABLE_MARKET_BROWSER && (
-        <div className="bg-gray-800 p-4 rounded-lg shadow-lg flex items-center space-x-4">
+        <div className="bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
           <label htmlFor="symbol-input" className="font-semibold text-gray-300">Market:</label>
           <div className="inline-flex items-stretch rounded-xl overflow-hidden ring-1 ring-white/10 bg-gray-700">
             <input 
@@ -314,7 +314,7 @@ const Dashboard: React.FC = () => {
               value={chartSymbol}
               onChange={e => setChartSymbol(e.target.value.toUpperCase())}
               placeholder="e.g. AAPL"
-              className="bg-gray-700 text-white placeholder-gray-400 focus:outline-none w-48 h-11 px-3"
+              className="bg-gray-700 text-white placeholder-gray-400 focus:outline-none w-full md:w-48 h-11 px-3"
             />
             <button
               onClick={() => setIsMarketModalOpen(true)}
@@ -338,7 +338,7 @@ const Dashboard: React.FC = () => {
 
       {/* Chart layout */}
       {ENABLE_CHART && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 h-[320px] sm:h-[420px] lg:h-[500px]">
           <div className="lg:col-span-3 bg-gray-800 p-1 rounded-lg shadow-lg">
             {chartSymbol ? (
               <TradingViewWidget key={`${chartSymbol}-${chartTimeframe}`} symbol={chartSymbol} timeframe={chartTimeframe} />
@@ -352,10 +352,10 @@ const Dashboard: React.FC = () => {
       )}
 
       {/* Equity Curve */}
-       <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+       <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Equity Curve</h3>
-        <div style={{ width: '100%', height: 300 }}>
-          <ResponsiveContainer>
+        <div className="w-full h-[220px] sm:h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis dataKey="date" stroke="#9CA3AF" />
@@ -372,8 +372,8 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Best & Recent */}
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-gray-800 p-6 rounded-lg shadow-lg lg:col-span-1">
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg lg:col-span-1">
           <h3 className="text-lg font-semibold text-white mb-4">Best Performance</h3>
           <div className="space-y-3 text-sm text-gray-300">
             <div className="bg-gray-900/50 p-3 rounded">
@@ -394,14 +394,14 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-gray-800 p-6 rounded-lg shadow-lg lg:col-span-2">
+        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg lg:col-span-2">
           <h3 className="text-lg font-semibold text-white mb-4">Recent Trades</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {recentTrades.length === 0 && (
               <p className="text-gray-500">No recent closed trades.</p>
             )}
             {recentTrades.map(rt => (
-              <div key={rt.id} onClick={() => navigate(`/positions/${rt.id}`)} className="bg-gray-900/40 rounded p-4 flex justify-between items-center cursor-pointer hover:bg-gray-900/60 transition">
+              <div key={rt.id} onClick={() => navigate(`/positions/${rt.id}`)} className="bg-gray-900/40 rounded p-3 sm:p-4 flex justify-between items-center cursor-pointer hover:bg-gray-900/60 transition">
                 <div>
                   <p className="text-white font-semibold">{rt.symbol}</p>
                   <p className="text-xs text-gray-400">{new Date(rt.exit_ts!).toLocaleString()}</p>
@@ -418,7 +418,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Scheduler Activity */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Scheduler Activity</h3>
         {schedulerError ? (
           <p className="text-red-300">Failed to load scheduler: {schedulerError}</p>
