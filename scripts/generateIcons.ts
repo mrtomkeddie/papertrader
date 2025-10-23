@@ -12,9 +12,9 @@ async function ensurePublicDir(): Promise<string> {
 
 function pickSource(publicDir: string): string {
   const candidates = [
+    'icon.png',
     'papertraderlogo.svg',
     'fav.svg',
-    'icon.png',
   ];
   for (const name of candidates) {
     const p = path.resolve(publicDir, name);
