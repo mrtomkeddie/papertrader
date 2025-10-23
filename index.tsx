@@ -2,8 +2,6 @@ import { registerSW } from 'virtual:pwa-register';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { initDb } from './services/database';
-import { ensureSignedIn } from './services/firebase';
 
 // Register the PWA service worker manually
 registerSW({ immediate: true });
@@ -21,15 +19,4 @@ root.render(
   </React.StrictMode>
 );
 
-// Ensure we have a user session, then seed Firestore
-ensureSignedIn().catch(err => {
-  console.error('[auth] ensureSignedIn error:', err);
-});
-
-// Seed Firestore in the background and log any issues
-initDb().catch(error => {
-  console.error(
-    "Failed to initialize database:",
-    error instanceof Error ? error.message : String(error)
-  );
-});
+/* Auth gate and Firestore seeding are handled inside App for Google-only auth. */

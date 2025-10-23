@@ -1,7 +1,7 @@
 // services/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore, setLogLevel } from 'firebase/firestore';
-import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 // Support both Vite (import.meta.env) and Node (process.env)
 const viteEnv: any = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : {};
@@ -35,17 +35,7 @@ export const db = initializeFirestore(app, {
 
 export const auth = getAuth(app);
 
-// Ensure we have an authenticated user (anonymous by default)
-export const ensureSignedIn = async (): Promise<void> => {
-  try {
-    if (!auth.currentUser) {
-      await signInAnonymously(auth);
-      console.log('[auth] Signed in anonymously');
-    }
-  } catch (e) {
-    console.error('[auth] Anonymous sign-in failed:', e instanceof Error ? e.message : String(e));
-  }
-};
+// Anonymous login removed; app gates UI until Google sign-in.
 
 export const signInWithGoogle = async (): Promise<void> => {
   const provider = new GoogleAuthProvider();
@@ -61,8 +51,7 @@ export const signOutUser = async (): Promise<void> => {
   try {
     await signOut(auth);
     console.log('[auth] Signed out');
-    // Keep app usable by falling back to anonymous
-    await ensureSignedIn();
+    // No anonymous fallback in Google-only mode; App will show login gate.
   } catch (e) {
     console.error('[auth] Sign out failed:', e instanceof Error ? e.message : String(e));
   }
