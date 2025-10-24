@@ -4,6 +4,8 @@
 
 # Paper Trader
 
+Note: This repository is the single app. The previous root app has been removed; use this repo for all commands, UI, and the scheduler.
+
 Run this app locally and scan a narrow set of liquid markets using deterministic strategy rules, while a lightweight LLM provides summaries and failure explanations.
 
 View your app in AI Studio: https://ai.studio/apps/drive/12Ze_JeS3qVf6P5v0sZZ0eh-0AZ73ZOwB
@@ -38,7 +40,7 @@ VITE_FIREBASE_APP_ID=...
 
 ## Selections (for profit focus)
 
-- Instruments: `BINANCE:BTCUSDT`, `FX:EURUSD`
+- Instruments: `BINANCE:BTCUSDT`, `BINANCE:ETHUSDT`, `FX:EURUSD`, `FX:GBPUSD`
 - Methods: `Opening-Range Breakout (ORB)`, `Trend Pullback / Break-and-Retest`, `VWAP Reversion`
 - Rationale:
   - ORB captures session impulse moves (London/NY overlap; US peak crypto).
