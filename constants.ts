@@ -54,8 +54,8 @@ export const SELECTED_INSTRUMENTS = [
 ];
 
 export const SELECTED_METHODS = [
-  // Three core strategies aligned with frequent, high-quality opportunities
-  'Opening-Range Breakout (ORB)',
-  'Trend Pullback / Break-and-Retest',
+  // Strategy names must match signal.strategy from strategyService
+  'ORB',
+  'Trend Pullback',
   'VWAP Reversion',
 ];
