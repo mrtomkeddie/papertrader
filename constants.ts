@@ -51,6 +51,7 @@ export const SELECTED_INSTRUMENTS = [
   // Narrowed universe for higher predictability and liquidity
   { symbol: 'BINANCE:BTCUSDT', description: 'Bitcoin / Tether', category: 'Crypto' },
   { symbol: 'FX:EURUSD', description: 'Euro / US Dollar', category: 'Forex' },
+  { symbol: 'FX:GBPUSD', description: 'Great British Pound / US Dollar', category: 'Forex' },
 ];
 
 export const SELECTED_METHODS = [
