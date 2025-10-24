@@ -7,7 +7,7 @@ import { useDatabase } from '../hooks/useDatabase';
 import { Position, PositionStatus, Side, Strategy, LedgerEntry } from '../types';
 import TradingViewWidget from '../components/TradingViewWidget';
 import MarketSearchModal from '../components/MarketSearchModal';
-import { SELECTED_INSTRUMENTS, SELECTED_METHODS } from '../constants';
+import { SELECTED_INSTRUMENTS, SELECTED_METHODS, DEFAULT_SYMBOL, DEFAULT_TIMEFRAME } from '../constants';
 import { SearchIcon } from '../components/icons/Icons';
 import { SchedulerActivity } from '../types';
 
@@ -38,6 +38,8 @@ const Dashboard: React.FC = () => {
     return strategies ? strategies.filter(s => s.enabled) : [];
   }, [strategies]);
 
+  const primaryStrategy = useMemo(() => enabledStrategies[0] || null, [enabledStrategies]);
+
   const uniqueInstruments = useMemo(() => {
     return [...new Set(enabledStrategies.map(s => s.symbol))];
   }, [enabledStrategies]);
@@ -47,8 +49,8 @@ const Dashboard: React.FC = () => {
   }, [enabledStrategies]);
   
   // Initialize with state from location if available, otherwise use defaults.
-  const [chartSymbol, setChartSymbol] = useState(location.state?.symbol || primaryStrategy?.symbol || 'AAPL');
-  const [chartTimeframe, setChartTimeframe] = useState(location.state?.timeframe || primaryStrategy?.timeframe || '1D');
+  const [chartSymbol, setChartSymbol] = useState(location.state?.symbol || primaryStrategy?.symbol || DEFAULT_SYMBOL);
+  const [chartTimeframe, setChartTimeframe] = useState(location.state?.timeframe || primaryStrategy?.timeframe || DEFAULT_TIMEFRAME);
   const [isMarketModalOpen, setIsMarketModalOpen] = useState(false);
   
   // Session countdown state
