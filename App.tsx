@@ -145,7 +145,7 @@ const App: React.FC = () => {
             <img src="/ptlogo.png" alt="Paper Trader logo" className="h-8 w-auto" />
             <div className="w-6" /> {/* Spacer for symmetry */}
           </header>
-          <main className="pt-16 md:pt-6 ml-0 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
+          <main className="pt-20 md:pt-6 ml-0 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
             <Routes>
               <Route path="/" element={<Dashboard />} />
