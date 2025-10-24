@@ -55,11 +55,11 @@ export const executeAiTrade = async (
     slippage_bps: trade.slippage_bps,
     fee_bps: trade.fee_bps,
     enabled: true,
-  } as any);
+  } as any, trade.reason);
 
   const newExplanation: Omit<Explanation, 'id'> = {
     position_id: addedPosition.id,
-    plain_english_entry: `AI Trade (${trade.strategy_type}): ${trade.reason}\n\n${explanationText}`,
+    plain_english_entry: explanationText,
     exit_reason: null,
   };
   await db.addExplanation(newExplanation);

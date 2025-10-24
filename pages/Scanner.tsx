@@ -64,49 +64,40 @@ const Scanner: React.FC = () => {
     setMarketsBeingScanned(marketTypesMessage);
     setScanProgress({ current: 0, total: marketsToScan.length });
     
-    const baseTimeframe = '1D'; // Initial timeframe for AI analysis, AI will suggest optimal one
+    const baseTimeframe = '1H'; // Initial timeframe for strategy evaluation
 
     const foundOpportunities: Opportunity[] = [];
-    let quotaErrorOccurred = false;
 
-    // Process markets sequentially with a delay to avoid rate limits
-    for (let i = 0; i < marketsToScan.length; i++) {
-        const market = marketsToScan[i];
+    // Process markets sequentially
+    for (const market of marketsToScan) {
         try {
-            const action = await getAiTradeAction(market.symbol, baseTimeframe);
-            if (action.action === 'TRADE') {
-                const st = action.trade?.strategy_type;
-                // Enforce selected methods only
-                if (!st || !SELECTED_METHODS.includes(st)) {
-                    // Skip trades that are not in the allowed strategy set
-                    continue;
-                }
-                foundOpportunities.push({ symbol: market.symbol, action });
+            const signals = await getStrategySignals(market.symbol, baseTimeframe);
+            for (const signal of signals) {
+                if (!SELECTED_METHODS.includes(signal.strategy)) continue;
+                const trade = {
+                    side: signal.side,
+                    entry_price: signal.entry,
+                    stop_price: signal.stop,
+                    tp_price: signal.tp,
+                    reason: signal.reason,
+                    strategy_type: signal.strategy,
+                    slippage_bps: 5,
+                    fee_bps: 10,
+                    risk_reward_ratio: signal.rrr,
+                    suggested_timeframe: baseTimeframe,
+                };
+                foundOpportunities.push({ symbol: market.symbol, action: { action: 'TRADE', trade } });
             }
-        } catch (apiError: any) {
-            console.error(`Error scanning ${market.symbol}:`, apiError);
-            if (apiError.message && apiError.message.includes("quota")) {
-                quotaErrorOccurred = true;
-                setError(apiError.message); // Display the specific quota error
-                break; // Stop scanning if quota is exceeded
-            }
-            // If it's another error, log it but continue scanning other markets
-            // setError((prev) => (prev ? prev + `\nError for ${market.symbol}: ${apiError.message}` : `Error for ${market.symbol}: ${apiError.message}`));
+        } catch (error: any) {
+            console.error(`Error scanning ${market.symbol}:`, error);
+            // Continue scanning other markets
         } finally {
             setScanProgress(prev => ({ ...prev, current: prev.current + 1 }));
         }
-
-        // Introduce a delay to avoid hitting rate limits, but not after the last market
-        if (i < marketsToScan.length - 1 && !quotaErrorOccurred) {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
-        }
     }
 
-    if (quotaErrorOccurred) {
-        // If quota error occurred, stop here and don't try to rank
-        setIsScanning(false);
-        return;
-    }
+    // Sort opportunities by RRR descending
+    foundOpportunities.sort((a, b) => (b.action.trade?.risk_reward_ratio || 0) - (a.action.trade?.risk_reward_ratio || 0));
 
     if (foundOpportunities.length === 0) {
         setError(`Scan of ${marketTypesMessage} complete. No high-probability setups were found at this time.`);
@@ -131,11 +122,11 @@ const Scanner: React.FC = () => {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop()?.replace('_', ' ');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-        <h2 className="text-3xl font-bold text-white">Smart Market Scanner</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white">Smart Market Scanner</h2>
       </div>
-      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+      <div className="bg-gray-800 p-2 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4">
             <div>
                 <h3 className="text-lg font-semibold text-primary-light">Optimal Trading Windows</h3>
@@ -155,22 +146,22 @@ const Scanner: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Forex Card */}
-          <div className="bg-gray-900/50 p-3 sm:p-4 rounded-lg sm:rounded-xl flex items-center space-x-4">
+          <div className="bg-gray-900/50 p-2 sm:p-4 rounded-lg sm:rounded-xl flex items-center space-x-3 sm:space-x-4">
             <div className="text-primary-light"><GlobeIcon /></div>
             <div>
               <h4 className="font-bold text-white">Forex Markets</h4>
-              <p className="text-2xl font-bold font-mono text-primary-light tracking-wider">
+              <p className="text-xl sm:text-2xl font-bold font-mono text-primary-light tracking-wider">
                 {formatUtcHourToLocal(12)} - {formatUtcHourToLocal(20)}
               </p>
               <p className="text-xs text-gray-400">Mon-Fri (London/NY Overlap)</p>
             </div>
           </div>
           {/* Crypto Card */}
-          <div className="bg-gray-900/50 p-3 sm:p-4 rounded-lg sm:rounded-xl flex items-center space-x-4">
+          <div className="bg-gray-900/50 p-2 sm:p-4 rounded-lg sm:rounded-xl flex items-center space-x-3 sm:space-x-4">
             <div className="text-primary-light"><CoinIcon /></div>
             <div>
               <h4 className="font-bold text-white">Crypto Markets</h4>
-              <p className="text-2xl font-bold font-mono text-primary-light tracking-wider">
+              <p className="text-xl sm:text-2xl font-bold font-mono text-primary-light tracking-wider">
                 {formatUtcHourToLocal(13)} - {formatUtcHourToLocal(22)}
               </p>
               <p className="text-xs text-gray-400">Daily (Peak US Volume)</p>
@@ -217,8 +208,8 @@ const Scanner: React.FC = () => {
 
       {opportunities.length > 0 && !isScanning && (
         <div className="space-y-4 pt-6">
-          <h3 className="text-2xl font-bold text-white">All Found Opportunities</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+          <h3 className="text-xl sm:text-2xl font-bold text-white">All Found Opportunities</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {opportunities.map(op => (
               <OpportunityCard key={op.symbol} opportunity={op} onAnalyze={handleAnalyze} />
             ))}
@@ -255,7 +246,7 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onAnalyz
       </div>
       <button 
         onClick={() => onAnalyze(opportunity)}
-        className="mt-4 w-full px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+        className="mt-3 sm:mt-4 w-full px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
       >
         Analyze on Dashboard
       </button>

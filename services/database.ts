@@ -206,3 +206,5 @@ export const updateSchedulerActivity = async (activity: SchedulerActivity): Prom
   const docRef = doc(db, 'scheduler', 'activity');
   await setDoc(docRef, activity, { merge: true });
 };
+
+export { db };

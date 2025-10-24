@@ -226,28 +226,28 @@ const Settings: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      <h2 className="text-2xl sm:text-3xl font-bold text-white">Settings</h2>
+    <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
+      <h2 className="text-xl sm:text-3xl font-bold text-white">Settings</h2>
 
       {/* Account & Security */}
-      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
-        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">Account & Security</h3>
-        <p className="text-gray-400 mb-4">
+      <div className="bg-gray-800 p-2 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-base sm:text-xl font-semibold mb-2 text-primary-light">Account & Security</h3>
+        <p className="text-gray-400 text-sm sm:text-base mb-4">
           You are {userInfo?.isAnonymous ? 'signed in anonymously' : 'signed in'}.
           {userInfo && (
             <span className="ml-1">UID: <code className="text-gray-300">{userInfo.uid}</code></span>
           )}
         </p>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-3 sm:gap-4">
           <button
             onClick={() => signInWithGoogle()}
-            className="px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-center leading-tight"
+            className="px-3 sm:px-4 py-2 sm:py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-center leading-tight"
           >
             Sign in with Google
           </button>
           <button
             onClick={() => signOutUser()}
-            className="px-4 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition text-center leading-tight"
+            className="px-3 sm:px-4 py-2 sm:py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition text-center leading-tight"
           >
             Sign out
           </button>
@@ -264,7 +264,7 @@ const Settings: React.FC = () => {
         <div className="flex flex-wrap gap-4">
           <button
             onClick={handleExportData}
-            className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-center leading-tight"
+            className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-center leading-tight"
           >
             Export All Data
           </button>
@@ -315,14 +315,14 @@ const Settings: React.FC = () => {
         </div>
         
         <h4 className="text-base sm:text-lg font-semibold mt-6 mb-2">Test Webhook</h4>
-        <form onSubmit={handleTestWebhook}>
+        <form onSubmit={handleTestWebhook} className="space-y-3 sm:space-y-4">
             <textarea
                 value={testPayload}
                 onChange={(e) => setTestPayload(e.target.value)}
                 rows={8}
-                className="w-full bg-gray-900 p-3 rounded-md text-sm text-gray-300 font-mono focus:ring-primary focus:border-primary border border-gray-600"
+                className="w-full h-32 sm:h-40 bg-gray-900 text-white p-2 sm:p-3 rounded-md font-mono text-xs sm:text-sm"
             />
-            <button type="submit" className="mt-4 px-4 py-3 bg-primary-dark text-white rounded-md hover:bg-primary-darker transition text-center leading-tight">
+            <button type="submit" className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-center leading-tight">
                 Send Test Alert
             </button>
         </form>

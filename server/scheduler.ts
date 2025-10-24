@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config();
 import { SELECTED_INSTRUMENTS, SELECTED_METHODS } from '../constants';
-import { getAiTradeAction } from '../services/geminiService';
+import { getStrategySignals } from '../services/strategyService';
 import { executeAiTrade } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
@@ -23,9 +23,10 @@ const isCryptoWindow = () => {
 };
 
 let lastRunKey = '';
-const alreadyRanThisHour = () => {
+const alreadyRanThisInterval = () => {
   const now = new Date();
-  const key = `${now.toDateString()}-${now.getUTCHours()}-${isForexWindow() ? 'forex' : isCryptoWindow() ? 'crypto' : 'none'}`;
+  const minuteBucket = Math.floor(now.getUTCMinutes() / 5);
+  const key = `${now.toDateString()}-${now.getUTCHours()}-${minuteBucket}-${isForexWindow() ? 'forex' : isCryptoWindow() ? 'crypto' : 'none'}`;
   if (key === lastRunKey) return true;
   lastRunKey = key;
   return false;
@@ -67,9 +68,9 @@ async function tick() {
     });
     return;
   }
-  if (alreadyRanThisHour()) {
-    msgs.push('Already ran this hour');
-    console.log('[Scheduler] Already ran this hour; skipping.');
+  if (alreadyRanThisInterval()) {
+    msgs.push('Already ran this interval');
+    console.log('[Scheduler] Already ran this interval; skipping.');
     await db.updateSchedulerActivity({
       last_run_ts: Date.now(),
       window: windowName,
@@ -89,11 +90,25 @@ async function tick() {
   const ops: Opportunity[] = [];
   for (const m of universe) {
     try {
-      const action = await getAiTradeAction(m.symbol, '1H');
-      if (action.action === 'TRADE') {
-        const st = action.trade?.strategy_type;
-        if (!st || !SELECTED_METHODS.includes(st)) continue;
-        ops.push({ symbol: m.symbol, action });
+      const signals = await getStrategySignals(m.symbol, '1H');
+      if (signals.length > 0) {
+        // Pick the best signal by RRR
+        signals.sort((a, b) => b.rrr - a.rrr);
+        const topSignal = signals[0];
+        if (!SELECTED_METHODS.includes(topSignal.strategy)) continue;
+        const trade = {
+          side: topSignal.side,
+          entry_price: topSignal.entry,
+          stop_price: topSignal.stop,
+          tp_price: topSignal.tp,
+          reason: topSignal.reason,
+          strategy_type: topSignal.strategy,
+          slippage_bps: 5,
+          fee_bps: 10,
+          risk_reward_ratio: topSignal.rrr,
+          suggested_timeframe: '1H',
+        };
+        ops.push({ symbol: m.symbol, action: { action: 'TRADE', trade } });
       }
     } catch (e) {
       msgs.push(`Scan error for ${m.symbol}`);

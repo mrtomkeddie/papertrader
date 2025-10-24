@@ -47,13 +47,15 @@ const deterministicFailureAnalysis = (position: Position, explanation: Explanati
   return `The trade resulted in a loss of £${lossGbp} (−${rText}). Price moved against the position after entry at ${entry} and reached ${exitText} (${stop}). ${hypothesis} Consider waiting for stronger confirmation at a cleaner level, or adjusting stop placement to reduce early invalidation.`;
 };
 
-export const generateExplanationText = async (position: Position, strategy: Strategy): Promise<string> => {
+export const generateExplanationText = async (position: Position, strategy: Strategy, strategyReason?: string): Promise<string> => {
   if (!ai) {
     return deterministicExplanation(position, strategy);
   }
   
+  const reasonPart = strategyReason ? `- Strategy Reason: ${strategyReason}` : '';
+
   const prompt = `
-    You are a trading assistant. Given the following trade data, generate a concise, plain-English explanation following the provided template.
+    You are a trading assistant. Given the following trade data, generate a concise, plain-English explanation following the provided template. Incorporate the strategy reason if provided.
 
     **Trade Data:**
     - Symbol: ${position.symbol}
@@ -66,14 +68,17 @@ export const generateExplanationText = async (position: Position, strategy: Stra
     - Take Profit R-Multiple: ${strategy.take_profit_R}
     - Take Profit Price: ${formatPrice(position.tp_price)}
     - Risk Amount (GBP): ${strategy.risk_per_trade_gbp}
-    - Signal Source: TradingView Webhook Alert
+    - Signal Source: Deterministic Strategy
+    ${reasonPart}
 
     **Template:**
-    "Entered {side} on {symbol} based on a signal from TradingView at {entry_time}. Entry price: {entry_price}. Stop-loss was set using the {stop_logic} method (ATR multiplier: {atr_multiplier}) at {stop_price}. The take-profit target was set at a {take_profit_R}R multiple, targeting a price of {tp_price}. The total amount at risk for this trade was £{risk_amount}."
+    "Entered {side} on {symbol} based on {strategy.name} strategy at {entry_time}. [Briefly incorporate strategy reason here if provided]. Entry price: {entry_price}. Stop-loss was set using the {stop_logic} method (ATR multiplier: {atr_multiplier}) at {stop_price}. The take-profit target was set at a {take_profit_R}R multiple, targeting a price of {tp_price}. The total amount at risk for this trade was £{risk_amount}."
 
     **Instructions:**
     1. Replace all placeholders in the template with the provided data.
-    2. Return ONLY the completed paragraph as a single string.
+    2. If strategy reason is provided, integrate it naturally into the explanation after mentioning the strategy.
+    3. Keep it concise, 2-4 sentences max.
+    4. Return ONLY the completed paragraph as a single string.
   `;
 
   try {

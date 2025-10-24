@@ -7,10 +7,17 @@ import PositionDetail from './pages/PositionDetail';
 import Strategies from './pages/Strategies';
 import Settings from './pages/Settings';
 import Scanner from './pages/Scanner';
-import { DashboardIcon, ListIcon, StrategyIcon, SettingsIcon, ScannerIcon } from './components/icons/Icons'; 
+import Analytics from './pages/Analytics';
+import { DashboardIcon, ListIcon, StrategyIcon, SettingsIcon, ScannerIcon, AnalyticsIcon } from './components/icons/Icons';
 import { auth, signInWithGoogle } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { initDb } from './services/database';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { collection, onSnapshot, QuerySnapshot } from 'firebase/firestore';
+import { db } from './services/database';
+import { toast } from 'react-toastify';
+import { Explanation } from './types';
 
 const App: React.FC = () => {
   // Read feature flags from Vite env
@@ -26,6 +33,33 @@ const App: React.FC = () => {
       }
     });
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const explanationsCollection = collection(db, 'explanations');
+    let isInitial = true;
+    const unsubscribe = onSnapshot(explanationsCollection, (snapshot: QuerySnapshot) => {
+      if (isInitial) {
+        isInitial = false;
+        return;
+      }
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const explanation = change.doc.data() as Explanation;
+          toast.info(`New Trade: ${explanation.plain_english_entry}`);
+        }
+        if (change.type === 'modified') {
+          const explanation = change.doc.data() as Explanation;
+          if (explanation.exit_reason) {
+            toast.info(`Trade Closed: ${explanation.exit_reason}`);
+          }
+          if (explanation.failure_analysis) {
+            toast.warn(`Failure Analysis: ${explanation.failure_analysis}`);
+          }
+        }
+      });
+    });
+    return () => unsubscribe();
   }, []);
 
   // Removed periodic price check interval to eliminate background overhead
@@ -49,7 +83,7 @@ const App: React.FC = () => {
       ) : (
         // Original app content when authenticated
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-gray-200 font-sans">
-          <aside className="fixed top-0 left-0 h-screen md:w-64 w-20 bg-gray-800/80 backdrop-blur-sm border-r border-white/10 p-4 flex flex-col">
+          <aside className="fixed top-0 left-0 h-screen w-20 md:w-64 bg-gray-800/80 backdrop-blur-sm border-r border-white/10 p-2 md:p-4 flex flex-col">
             <img src="/fav.svg" alt="Paper Trader icon" className="h-8 w-8 mb-6 mx-auto md:hidden" />
             <div className="mb-8 hidden md:flex items-center justify-center">
               <img src="/ptlogo.png" alt="Paper Trader logo" className="h-12 w-auto" />
@@ -62,10 +96,12 @@ const App: React.FC = () => {
               )}
               <NavItem to="/trades" icon={<ListIcon />}>Trades</NavItem>
               <NavItem to="/strategies" icon={<StrategyIcon />}>Strategies</NavItem>
+              <NavItem to="/analytics" icon={<AnalyticsIcon />}>Analytics</NavItem>
               <NavItem to="/settings" icon={<SettingsIcon />}>Settings</NavItem>
             </nav>
           </aside>
-          <main className="md:ml-64 ml-20 md:p-6 p-4 h-screen overflow-y-auto">
+          <main className="ml-20 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
+            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
             <Routes>
               <Route path="/" element={<Dashboard />} />
               {/* Conditionally register Scanner route */}
@@ -75,6 +111,7 @@ const App: React.FC = () => {
               <Route path="/trades" element={<Trades />} />
               <Route path="/positions/:id" element={<PositionDetail />} />
               <Route path="/strategies" element={<Strategies />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Dashboard />} />
             </Routes>

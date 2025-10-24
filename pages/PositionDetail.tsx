@@ -103,9 +103,9 @@ const PositionDetail: React.FC = () => {
   const riskedAmount = Math.abs(position.entry_price - position.stop_price) * position.qty;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
-        <h2 className="text-xl sm:text-3xl font-bold text-white">
+        <h2 className="text-lg sm:text-3xl font-bold text-white">
           {position.symbol} Trade Details
         </h2>
         <span className={`self-start sm:self-auto px-2 py-0.5 text-xs font-semibold rounded-full ${position.status === PositionStatus.OPEN ? 'bg-blue-900 text-blue-300' : 'bg-gray-600 text-gray-300'}`}>
@@ -115,7 +115,7 @@ const PositionDetail: React.FC = () => {
 
       <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <h3 className="text-lg sm:text-xl font-semibold text-primary-light">Trade Explanation</h3>
+          <h3 className="text-base sm:text-xl font-semibold text-primary-light">Trade Explanation</h3>
           <div className="flex w-full sm:w-auto items-center justify-start sm:justify-end gap-2 sm:gap-3">
             {regenSuccess && <span className="text-green-400 text-sm">Updated</span>}
             {regenError && <span className="text-red-400 text-sm">{regenError}</span>}
@@ -126,30 +126,30 @@ const PositionDetail: React.FC = () => {
             >{isRegenerating ? 'Regenerating…' : 'Regenerate Explanation'}</button>
           </div>
         </div>
-        <p className="text-sm sm:text-base text-gray-300 leading-relaxed">{explanation?.plain_english_entry || 'No explanation available.'}</p>
-        {explanation?.exit_reason && <p className="mt-4 text-sm sm:text-base text-gray-300"><strong>Exit Reason:</strong> {explanation.exit_reason}</p>}
+        <p className="text-xs sm:text-base text-gray-300 leading-relaxed">{explanation?.plain_english_entry || 'No explanation available.'}</p>
+        {explanation?.exit_reason && <p className="mt-3 sm:mt-4 text-xs sm:text-base text-gray-300"><strong>Exit Reason:</strong> {explanation.exit_reason}</p>}
       </div>
 
       {explanation?.failure_analysis && (
         <div className="bg-red-900/20 border border-red-700/50 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-red-300">AI Post-Mortem Analysis</h3>
+              <h3 className="text-base sm:text-xl font-semibold text-red-300">AI Post-Mortem Analysis</h3>
               <div className="flex w-full sm:w-auto items-center justify-start sm:justify-end gap-2 sm:gap-3">
                 {regenAnalysisSuccess && <span className="text-green-400 text-sm">Updated</span>}
                 {regenAnalysisError && <span className="text-red-400 text-sm">{regenAnalysisError}</span>}
                 <button
-                  className="px-3 sm:px-4 py-2 text-sm rounded bg-red-600 hover:bg-red-500 disabled:opacity-60"
+                  className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm rounded bg-red-600 hover:bg-red-500 disabled:opacity-60"
                   disabled={isRegeneratingAnalysis || !explanation}
                   onClick={handleRegenerateFailureAnalysis}
                 >{isRegeneratingAnalysis ? 'Regenerating…' : 'Regenerate Analysis'}</button>
               </div>
             </div>
-            <p className="text-sm sm:text-base text-red-200/90 leading-relaxed">{explanation.failure_analysis}</p>
+            <p className="text-xs sm:text-base text-red-200/90 leading-relaxed">{explanation.failure_analysis}</p>
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-6">
-        <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-6 sm:gap-x-6 sm:gap-y-8">
+        <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-4 sm:gap-y-8">
             <DetailItem label="Side" value={position.side} color={position.side === Side.LONG ? 'text-green-400' : 'text-red-400'} />
             <DetailItem label="Quantity" value={position.qty.toFixed(6)} />
             <DetailItem label="P&L" value={position.pnl_gbp !== null ? `£${position.pnl_gbp.toFixed(2)}` : 'N/A'} color={pnlColor}/>
@@ -171,7 +171,7 @@ const PositionDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-gray-800 rounded-lg sm:rounded-xl shadow-lg h-[320px] sm:h-[420px] lg:h-[500px]">
+      <div className="bg-gray-800 rounded-lg sm:rounded-xl shadow-lg h-[280px] sm:h-[420px] lg:h-[500px]">
         <TradingViewWidget symbol={position.symbol} timeframe={strategy?.timeframe} />
       </div>
       <div className="bg-gray-800 rounded-lg sm:rounded-xl shadow-lg h-[320px] sm:h-[420px] lg:h-[500px]">
