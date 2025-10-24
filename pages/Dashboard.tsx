@@ -34,12 +34,17 @@ const Dashboard: React.FC = () => {
   const AUTOPILOT_RISK_GBP = Number(import.meta.env.VITE_AUTOPILOT_RISK_GBP ?? '');
   
   
-  const primaryStrategy = useMemo(() => {
-    if (strategies && strategies.length > 0) {
-      return strategies.find(s => s.enabled) || strategies[0];
-    }
-    return undefined;
+  const enabledStrategies = useMemo(() => {
+    return strategies ? strategies.filter(s => s.enabled) : [];
   }, [strategies]);
+
+  const uniqueInstruments = useMemo(() => {
+    return [...new Set(enabledStrategies.map(s => s.symbol))];
+  }, [enabledStrategies]);
+
+  const uniqueMethods = useMemo(() => {
+    return [...new Set(enabledStrategies.map(s => s.name))];
+  }, [enabledStrategies]);
   
   // Initialize with state from location if available, otherwise use defaults.
   const [chartSymbol, setChartSymbol] = useState(location.state?.symbol || primaryStrategy?.symbol || 'AAPL');

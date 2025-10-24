@@ -94,8 +94,8 @@ const App: React.FC = () => {
             className={`fixed top-0 left-0 h-screen w-64 bg-gray-800/80 backdrop-blur-sm border-r border-white/10 p-4 flex flex-col transform transition-transform duration-300 ease-in-out z-50 md:translate-x-0 md:w-64 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
           >
             <div className="mb-8 flex items-center justify-between">
-              <img src="/ptlogo.png" alt="Paper Trader logo" className="h-12 w-auto" />
-              <button className="md:hidden text-gray-300" onClick={() => setIsMenuOpen(false)}>
+              <img src="/ptlogo.png" alt="Paper Trader logo" className="h-8 w-auto" />
+              <button className="md:hidden text-gray-300 p-2" onClick={() => setIsMenuOpen(false)}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -156,10 +156,10 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, onClick }) => {
     <NavLink
       to={to}
       onClick={onClick}
-      className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors justify-center md:justify-start ${isActive ? 'bg-primary/20 text-primary-light ring-1 ring-primary/30' : ''}`}
+      className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors justify-start ${isActive ? &#39;bg-primary/20 text-primary-light ring-1 ring-primary/30&#39; : &#39;&#39;}`}
     >
       {icon}
-      <span className="hidden md:inline">{children}</span>
+      <span>{children}</span>
     </NavLink>
   );
 };
