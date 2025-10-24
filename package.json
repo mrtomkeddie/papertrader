@@ -9,10 +9,14 @@
     "preview": "vite preview",
     "scheduler": "node --env-file=.env.local --import tsx server/scheduler.ts",
     "reset": "node --env-file=.env.local --import tsx scripts/resetDb.ts",
-    "icons": "node --import tsx scripts/generateIcons.ts"
+    "icons": "node --import tsx scripts/generateIcons.ts",
+    "push:test": "node --env-file=.env.local --import tsx server/testPush.ts",
+    "push:broadcast": "node --env-file=.env.local --import tsx server/broadcastTest.ts"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",
+    "@types/express": "^5.0.4",
+    "express": "^5.1.0",
     "firebase": "^12.4.0",
     "firebase-admin": "^12.6.0",
     "lightweight-charts": "^4.2.3",

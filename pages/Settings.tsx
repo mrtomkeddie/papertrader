@@ -3,7 +3,8 @@ import * as db from '../services/database'; // Now uses Firestore-backed functio
 import { WEBHOOK_KEY, PINE_SCRIPT_ALERT_MESSAGE } from '../constants';
 import { handleWebhook, runPriceCheck } from '../services/tradingService';
 import { TradingViewPayload, Strategy, Signal, Position, Explanation, LedgerEntry, StopLogic } from '../types';
-import { collection, getDocs, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { db as firestoreDb } from '../services/firebase';
 // Add auth imports
 import { auth, signInWithGoogle, signOutUser } from '../services/firebase';
@@ -22,6 +23,8 @@ const Settings: React.FC = () => {
 
   // Auth state
   const [userInfo, setUserInfo] = useState<{ uid: string; isAnonymous: boolean; providers: string[] } | null>(null);
+  const [notificationStatus, setNotificationStatus] = useState<'granted' | 'denied' | 'default' | 'loading'>('default');
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -31,6 +34,13 @@ const Settings: React.FC = () => {
       }
     });
     return () => unsub();
+  }, []);
+  useEffect(() => {
+    const messaging = getMessaging();
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Foreground message received:', payload);
+    });
+    return () => unsubscribe();
   }, []);
 
   // Ensure the test symbol has an active strategy
@@ -196,6 +206,41 @@ const Settings: React.FC = () => {
       await runPriceCheck();
       setResponse({ message: "Manual price check job executed.", type: 'success'});
   }
+  const requestNotificationPermission = async () => {
+    setNotificationStatus('loading');
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationStatus(permission);
+      if (permission === 'granted') {
+        const messaging = getMessaging();
+        // Use the PWA service worker registration so Firebase Messaging can subscribe
+        const registration = await navigator.serviceWorker.ready;
+        const token = await getToken(messaging, {
+          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        });
+        if (token) {
+          setFcmToken(token);
+          const uid = auth.currentUser?.uid;
+          if (uid) {
+            const userRef = doc(firestoreDb, 'users', uid);
+            await setDoc(userRef, { fcmToken: token }, { merge: true });
+          } else {
+            console.warn('[push] No signed-in user; skipping Firestore token save.');
+          }
+          setResponse({ message: 'Push notifications enabled.', type: 'success' });
+        } else {
+          setResponse({ message: 'No FCM token returned. Check VAPID key and service worker.', type: 'error' });
+        }
+      } else {
+        setResponse({ message: 'Notification permission denied.', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error getting notification permission:', error);
+      setNotificationStatus('default');
+      setResponse({ message: 'Failed to enable push notifications.', type: 'error' });
+    }
+  };
 
   // Auto-run webhook test when visiting Settings with ?autotest=1
   useEffect(() => {
@@ -253,6 +298,35 @@ const Settings: React.FC = () => {
           </button>
         </div>
 
+      </div>
+
+      {/* Push Notifications */}
+      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">Push Notifications</h3>
+        <p className="text-gray-400 mb-4">
+          Enable push notifications to receive alerts for trades on your mobile device.
+        </p>
+        <button
+          onClick={requestNotificationPermission}
+          disabled={notificationStatus === 'loading' || notificationStatus === 'granted'}
+          className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 text-center leading-tight"
+        >
+          {notificationStatus === 'loading' ? 'Enabling...' : notificationStatus === 'granted' ? 'Enabled' : 'Enable Push Notifications'}
+        </button>
+        {fcmToken && (
+          <div className="mt-3 space-y-2">
+            <p className="text-sm text-gray-400">Your FCM Device Token:</p>
+            <div className="bg-gray-900 p-3 rounded-md">
+              <code className="text-xs break-all text-gray-300">{fcmToken}</code>
+            </div>
+            <button
+              onClick={() => navigator.clipboard.writeText(fcmToken)}
+              className="px-3 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition text-center leading-tight"
+            >
+              Copy Token
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Data Management */}

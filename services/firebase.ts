@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore, setLogLevel } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getMessaging } from 'firebase/messaging';
 
 // Support both Vite (import.meta.env) and Node (process.env)
 const viteEnv: any = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : {};
@@ -32,6 +33,8 @@ export const db = initializeFirestore(app, {
   // Disable fetch streams to avoid proxies that terminate streaming requests
   useFetchStreams: false,
 });
+
+export const messaging = getMessaging(app);
 
 export const auth = getAuth(app);
 

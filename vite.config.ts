@@ -13,8 +13,11 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         VitePWA({
+          strategies: 'injectManifest',
+          srcDir: '.',
+          filename: 'sw.js',
           registerType: 'autoUpdate',
-          devOptions: { enabled: true },
+          devOptions: { enabled: true, type: 'module' },
           manifest: {
             name: 'Paper Trader',
             short_name: 'PaperTrader',

@@ -3,7 +3,7 @@ dotenv.config({ path: '.env.local' });
 dotenv.config();
 import { SELECTED_INSTRUMENTS, SELECTED_METHODS } from '../constants';
 import { getStrategySignals } from '../services/strategyService';
-import { executeAiTrade } from './tradingServiceAdmin';
+import { executeAiTrade, runPriceCheckAdmin } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
 
@@ -145,6 +145,9 @@ async function tick() {
   } else {
     console.log(`[Scheduler] Placed ${placed} trade(s) this run.`);
   }
+
+  // Run price check to potentially close positions
+  await runPriceCheckAdmin();
 
   await db.updateSchedulerActivity({
     last_run_ts: Date.now(),

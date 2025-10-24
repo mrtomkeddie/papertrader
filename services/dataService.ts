@@ -138,3 +138,55 @@ export async function fetchHistoricalOHLC(symbol: string, interval: string, star
     return fetchYahooFinanceHistorical(symbol + '=X', start, end, interval); // Append '=X' for forex pairs
   }
 }
+
+const allowDailyFallback =
+  (process.env.ALLOW_FOREX_DAILY_FALLBACK || 'false').toLowerCase() === 'true';
+
+// Fetch OHLC from Alpha Vantage FX_DAILY (analytics-only)
+async function fetchAlphaVantageForexDaily(symbol: string, outputsize: string = 'compact'): Promise<OhlcData[]> {
+  const apiKey = process.env.ALPHA_VANTAGE_API_KEY || process.env.VITE_ALPHA_VANTAGE_API_KEY;
+  if (!apiKey) return [];
+
+  const pair = symbol.includes(':') ? symbol.split(':')[1] : symbol; // e.g., FX:EURUSD -> EURUSD
+  const fromSymbol = pair.slice(0, 3);
+  const toSymbol = pair.slice(3);
+  const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&outputsize=${outputsize}&apikey=${apiKey}`;
+  const response = await fetch(url);
+  if (!response.ok) return [];
+
+  const data = await response.json();
+  const timeSeries = data['Time Series FX (Daily)'];
+  if (!timeSeries) return [];
+
+  return Object.entries(timeSeries)
+    .map(([time, values]: [string, any]) => ({
+      time: Math.floor(new Date(time).getTime() / 1000),
+      open: parseFloat(values['1. open']),
+      high: parseFloat(values['2. high']),
+      low: parseFloat(values['3. low']),
+      close: parseFloat(values['4. close']),
+      volume: 0,
+    }))
+    .sort((a, b) => a.time - b.time);
+}
+
+// Analytics-only: intraday first, then optional daily fallback (with label)
+export async function fetchOHLCForAnalytics(
+  symbol: string,
+  interval: string = '1h',
+  limit: number = 100
+): Promise<{ data: OhlcData[]; timeframe: 'intraday' | 'daily' }> {
+  const intraday = await fetchOHLC(symbol, interval, limit); // intraday via AV/Yahoo Chart
+  if (intraday.length > 0) {
+    return { data: intraday, timeframe: 'intraday' };
+  }
+
+  if (allowDailyFallback) {
+    const daily = await fetchAlphaVantageForexDaily(symbol, limit <= 200 ? 'compact' : 'full');
+    if (daily.length > 0) {
+      return { data: daily, timeframe: 'daily' };
+    }
+  }
+
+  return { data: [], timeframe: 'intraday' };
+}
