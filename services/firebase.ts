@@ -34,7 +34,14 @@ export const db = initializeFirestore(app, {
   useFetchStreams: false,
 });
 
-export const messaging = getMessaging(app);
+// Guard messaging in environments where it is unsupported to avoid runtime crashes
+let messagingInstance: any = null;
+try {
+  messagingInstance = getMessaging(app);
+} catch (e) {
+  console.warn('[firebase] Messaging initialization skipped (unsupported environment):', e instanceof Error ? e.message : String(e));
+}
+export const messaging = messagingInstance;
 
 export const auth = getAuth(app);
 
