@@ -1,13 +1,13 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
-import Trades from './pages/Trades';
-import PositionDetail from './pages/PositionDetail';
-import Strategies from './pages/Strategies';
-import Settings from './pages/Settings';
-import Scanner from './pages/Scanner';
-import Analytics from './pages/Analytics';
+const Trades = React.lazy(() => import('./pages/Trades'));
+const PositionDetail = React.lazy(() => import('./pages/PositionDetail'));
+const Strategies = React.lazy(() => import('./pages/Strategies'));
+const Settings = React.lazy(() => import('./pages/Settings'));
+const Scanner = React.lazy(() => import('./pages/Scanner'));
+const Analytics = React.lazy(() => import('./pages/Analytics'));
 import { DashboardIcon, ListIcon, StrategyIcon, SettingsIcon, ScannerIcon, AnalyticsIcon } from './components/icons/Icons';
 import { auth } from './services/firebase';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -147,19 +147,21 @@ const App: React.FC = () => {
           </header>
           <main className="pt-20 md:pt-6 ml-0 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              {/* Conditionally register Scanner route */}
-              {ENABLE_SCANNER_UI && (
-                <Route path="/scanner" element={<Scanner />} />
-              )}
-              <Route path="/trades" element={<Trades />} />
-              <Route path="/positions/:id" element={<PositionDetail />} />
-              <Route path="/strategies" element={<Strategies />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<Dashboard />} />
-            </Routes>
+            <Suspense fallback={<div className="text-gray-300">Loading…</div>}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                {/* Conditionally register Scanner route */}
+                {ENABLE_SCANNER_UI && (
+                  <Route path="/scanner" element={<Scanner />} />
+                )}
+                <Route path="/trades" element={<Trades />} />
+                <Route path="/positions/:id" element={<PositionDetail />} />
+                <Route path="/strategies" element={<Strategies />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<Dashboard />} />
+              </Routes>
+            </Suspense>
           </main>
         </div>
       )}
