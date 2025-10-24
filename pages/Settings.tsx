@@ -9,6 +9,8 @@ import { db as firestoreDb } from '../services/firebase';
 // Add auth imports
 import { auth, signInWithGoogle, signOutUser } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { useDatabase } from '../hooks/useDatabase';
+import { SchedulerActivity } from '../types';
 
 const Settings: React.FC = () => {
   const [response, setResponse] = useState<{message: string, type: 'success' | 'error'} | null>(null);
@@ -25,6 +27,7 @@ const Settings: React.FC = () => {
   const [userInfo, setUserInfo] = useState<{ uid: string; isAnonymous: boolean; providers: string[] } | null>(null);
   const [notificationStatus, setNotificationStatus] = useState<'granted' | 'denied' | 'default' | 'loading'>('default');
   const [fcmToken, setFcmToken] = useState<string | null>(null);
+  const { data: schedulerActivity, loading: schedulerLoading, error: schedulerError } = useDatabase<SchedulerActivity>('scheduler', 'activity');
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -326,6 +329,43 @@ const Settings: React.FC = () => {
               Copy Token
             </button>
           </div>
+        )}
+      </div>
+
+      {/* Scheduler Status */}
+      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-primary-light">Scheduler Status</h3>
+        {schedulerLoading ? (
+          <p className="text-gray-400">Loading...</p>
+        ) : schedulerError ? (
+          <p className="text-red-300">Failed to load scheduler: {schedulerError}</p>
+        ) : schedulerActivity ? (
+          <div className="space-y-3 text-sm text-gray-300">
+            <p>Last run: <span className="font-mono">{new Date(schedulerActivity.last_run_ts).toLocaleString()}</span></p>
+            <p>Session: <span className="font-mono capitalize">{schedulerActivity.window}</span></p>
+            <p>Opportunities found: <span className="font-mono">{schedulerActivity.ops_found}</span></p>
+            <p>Trades placed: <span className="font-mono">{schedulerActivity.trades_placed}</span></p>
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Universe</p>
+              <div className="flex flex-wrap gap-2">
+                {(schedulerActivity.universe_symbols || []).map(s => (
+                  <span key={s} className="px-2 py-1 rounded-md bg-gray-700 text-gray-200 text-xs ring-1 ring-white/10">{s}</span>
+                ))}
+              </div>
+            </div>
+            {schedulerActivity.messages && schedulerActivity.messages.length > 0 && (
+              <div>
+                <p className="text-sm text-gray-400 mb-2">Messages</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {schedulerActivity.messages.map((m, i) => (
+                    <li key={i} className="text-gray-300">{m}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-gray-400">No scheduler activity yet.</p>
         )}
       </div>
 
