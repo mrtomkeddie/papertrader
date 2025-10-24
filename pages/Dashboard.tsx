@@ -243,7 +243,10 @@ const Dashboard: React.FC = () => {
             <p className="text-sm text-gray-400 mb-2">Instruments</p>
             <div className="flex flex-wrap gap-2">
               {SELECTED_INSTRUMENTS.map(m => (
-                <span key={m.symbol} className="px-2 py-1 rounded-md bg-gray-700 text-gray-200 text-xs ring-1 ring-white/10">{m.symbol}</span>
+                <span key={m.symbol} className="px-2 py-1 rounded-md bg-gray-700 text-gray-200 text-xs ring-1 ring-white/10">
+                  <span className="font-mono">{m.symbol}</span>
+                  <span className="ml-1 text-gray-400">— {m.description}</span>
+                </span>
               ))}
             </div>
           </div>

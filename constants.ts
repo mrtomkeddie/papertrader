@@ -23,6 +23,7 @@ export const POPULAR_MARKETS = [
 
   // Crypto
   { symbol: 'COINBASE:BTCUSD', description: 'Bitcoin / US Dollar', category: 'Crypto' },
+  { symbol: 'BINANCE:ETHUSDT', description: 'Ethereum / Tether', category: 'Crypto' },
   { symbol: 'COINBASE:ETHUSD', description: 'Ethereum / US Dollar', category: 'Crypto' },
   { symbol: 'BINANCE:SOLUSDT', description: 'Solana / Tether', category: 'Crypto' },
   { symbol: 'BINANCE:XRPUSDT', description: 'Ripple / Tether', category: 'Crypto' },
@@ -50,6 +51,7 @@ export const POPULAR_MARKETS = [
 export const SELECTED_INSTRUMENTS = [
   // Narrowed universe for higher predictability and liquidity
   { symbol: 'BINANCE:BTCUSDT', description: 'Bitcoin / Tether', category: 'Crypto' },
+  { symbol: 'BINANCE:ETHUSDT', description: 'Ethereum / Tether', category: 'Crypto' },
   { symbol: 'FX:EURUSD', description: 'Euro / US Dollar', category: 'Forex' },
   { symbol: 'FX:GBPUSD', description: 'Great British Pound / US Dollar', category: 'Forex' },
 ];
