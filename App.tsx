@@ -9,8 +9,8 @@ import Settings from './pages/Settings';
 import Scanner from './pages/Scanner';
 import Analytics from './pages/Analytics';
 import { DashboardIcon, ListIcon, StrategyIcon, SettingsIcon, ScannerIcon, AnalyticsIcon } from './components/icons/Icons';
-import { auth, signInWithGoogle } from './services/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './services/firebase';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { initDb } from './services/database';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -24,6 +24,7 @@ const App: React.FC = () => {
   // Read feature flags from Vite env
   const ENABLE_SCANNER_UI = (import.meta.env.VITE_ENABLE_SCANNER_UI === '1' || import.meta.env.VITE_ENABLE_SCANNER_UI === 'true');
   const [isAuthed, setIsAuthed] = useState<boolean>(!!auth.currentUser);
+  const [authError, setAuthError] = useState<string | null>(null);
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setIsAuthed(!!user);
@@ -65,6 +66,26 @@ const App: React.FC = () => {
   // Removed periodic price check interval to eliminate background overhead
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const handleGoogleSignIn = async () => {
+    setAuthError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (e: any) {
+      const code = e?.code || 'unknown';
+      let msg = 'Google sign-in failed.';
+      if (code === 'auth/unauthorized-domain') {
+        msg += ' Add this domain to Firebase Authentication authorized domains.';
+      } else if (code === 'auth/popup-blocked') {
+        msg += ' Popup was blocked by the browser; allow popups or try again.';
+      } else if (code === 'auth/popup-closed-by-user') {
+        msg += ' Popup closed before completing sign-in.';
+      }
+      setAuthError(`${msg} (${code})`);
+      console.error('[auth] Sign-in error:', e);
+    }
+  };
+
   return (
     <HashRouter>
       {/* If not authenticated, show a simple login gate */}
@@ -74,11 +95,16 @@ const App: React.FC = () => {
             <h2 className="text-lg sm:text-xl font-semibold mb-3 text-primary-light">Sign in to continue</h2>
             <p className="text-gray-400 mb-5">Use your Google account to access your data.</p>
             <button
-              onClick={() => signInWithGoogle()}
+              onClick={handleGoogleSignIn}
               className="px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
             >
               Sign in with Google
             </button>
+            {authError && (
+              <div className="mt-4 text-red-400 text-sm">
+                {authError}
+              </div>
+            )}
           </div>
         </div>
       ) : (
