@@ -156,7 +156,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, onClick }) => {
     <NavLink
       to={to}
       onClick={onClick}
-      className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors justify-start ${isActive ? &#39;bg-primary/20 text-primary-light ring-1 ring-primary/30&#39; : &#39;&#39;}`}
+      className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors justify-start ${isActive ? "bg-primary/20 text-primary-light ring-1 ring-primary/30" : ""}`}
     >
       {icon}
       <span>{children}</span>
