@@ -76,7 +76,7 @@ const Analytics: React.FC = () => {
   if (error) return <div className="text-center text-xl text-red-400">{error}</div>;
 
   return (
-    <div className="p-2 sm:p-6 max-w-4xl mx-auto space-y-6 sm:space-y-8">
+    <div className="p-2 sm:p-6 w-full space-y-6 sm:space-y-8">
       <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6">Performance Analytics</h1>
       
       <div className="space-y-8">

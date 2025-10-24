@@ -115,10 +115,10 @@ const Trades: React.FC = () => {
       <h2 className="text-2xl sm:text-3xl font-bold text-white">All Trades</h2>
 
       {/* Filter bar */}
-      <div className="sm:static sticky top-0 z-10 -mx-4 px-4 py-2 bg-gray-900/80 backdrop-blur rounded md:rounded-none">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="sm:static sticky top-0 z-10 -mx-4 px-4 py-3 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-md md:rounded-none">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="overflow-x-auto no-scrollbar -mx-1">
-            <div className="inline-flex gap-2 px-1 whitespace-nowrap">
+            <div className="inline-flex gap-3 px-1 whitespace-nowrap">
               {[
                 {key: 'all', label: 'All'},
                 {key: 'today', label: 'Today'},
@@ -129,19 +129,19 @@ const Trades: React.FC = () => {
                 <button
                   key={key}
                   onClick={() => setQuickRange(key as 'all'|'today'|'7d'|'30d'|'month')}
-                  className={`px-3 py-1.5 text-xs rounded-full border border-white/10 ${quickRange === key ? 'bg-primary-dark text-white' : 'bg-gray-800 text-gray-200 hover:bg-gray-700'}`}
+                  className={`px-4 py-2 text-sm rounded-full border border-white/20 transition-colors ${quickRange === key ? 'bg-primary text-white shadow-sm' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
                 >
                   {label}
                 </button>
               ))}
-              <button onClick={clearFilters} className="px-3 py-1.5 text-xs rounded-full bg-gray-700 text-white hover:bg-gray-600">Clear</button>
-              <button onClick={() => setFiltersExpanded(v => !v)} className="sm:hidden px-3 py-1.5 text-xs rounded-full bg-gray-700 text-white hover:bg-gray-600">
+              <button onClick={clearFilters} className="px-4 py-2 text-sm rounded-full bg-gray-600 text-white hover:bg-gray-500 transition-colors">Clear</button>
+              <button onClick={() => setFiltersExpanded(v => !v)} className="sm:hidden px-4 py-2 text-sm rounded-full bg-gray-600 text-white hover:bg-gray-500 transition-colors">
                 {filtersExpanded ? 'Hide filters' : 'More filters'}
               </button>
             </div>
           </div>
           {/* Desktop date range inline */}
-          <div className="hidden sm:grid sm:grid-cols-2 sm:gap-3">
+          <div className="hidden sm:grid sm:grid-cols-2 sm:gap-4">
             <div className="flex flex-col">
               <DatePicker label="Start date" value={startDate} onChange={setStartDate} />
             </div>
@@ -150,9 +150,9 @@ const Trades: React.FC = () => {
             </div>
           </div>
         </div>
-        <p className="text-xs text-gray-400 mt-2">Showing: {currentFilterLabel}</p>
+        <p className="text-sm text-gray-300 mt-3">Showing: {currentFilterLabel}</p>
         {/* Mobile date range collapsible */}
-        <div className={`${filtersExpanded ? 'grid' : 'hidden'} grid-cols-2 gap-3 mt-3 sm:hidden`}>
+        <div className={`${filtersExpanded ? 'grid' : 'hidden'} grid-cols-2 gap-4 mt-4 sm:hidden`}>
           <div className="flex flex-col">
             <DatePicker label="Start date" value={startDate} onChange={setStartDate} />
           </div>

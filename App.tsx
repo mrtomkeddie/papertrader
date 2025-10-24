@@ -18,11 +18,11 @@ import { collection, onSnapshot, QuerySnapshot } from 'firebase/firestore';
 import { db } from './services/database';
 import { toast } from 'react-toastify';
 import { Explanation } from './types';
+import { ListIcon as MenuIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
   // Read feature flags from Vite env
   const ENABLE_SCANNER_UI = (import.meta.env.VITE_ENABLE_SCANNER_UI === '1' || import.meta.env.VITE_ENABLE_SCANNER_UI === 'true');
-
   const [isAuthed, setIsAuthed] = useState<boolean>(!!auth.currentUser);
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -63,6 +63,7 @@ const App: React.FC = () => {
   }, []);
 
   // Removed periodic price check interval to eliminate background overhead
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <HashRouter>
@@ -83,24 +84,42 @@ const App: React.FC = () => {
       ) : (
         // Original app content when authenticated
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-gray-200 font-sans">
-          <aside className="fixed top-0 left-0 h-screen w-20 md:w-64 bg-gray-800/80 backdrop-blur-sm border-r border-white/10 p-2 md:p-4 flex flex-col">
-            <img src="/fav.svg" alt="Paper Trader icon" className="h-8 w-8 mb-6 mx-auto md:hidden" />
-            <div className="mb-8 hidden md:flex items-center justify-center">
+          {isMenuOpen && (
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+              onClick={() => setIsMenuOpen(false)}
+            />
+          )}
+          <aside 
+            className={`fixed top-0 left-0 h-screen w-64 bg-gray-800/80 backdrop-blur-sm border-r border-white/10 p-4 flex flex-col transform transition-transform duration-300 ease-in-out z-50 md:translate-x-0 md:w-64 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+          >
+            <div className="mb-8 flex items-center justify-between">
               <img src="/ptlogo.png" alt="Paper Trader logo" className="h-12 w-auto" />
+              <button className="md:hidden text-gray-300" onClick={() => setIsMenuOpen(false)}>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
             <nav className="flex flex-col space-y-2">
-              <NavItem to="/" icon={<DashboardIcon />}>Dashboard</NavItem>
-              {/* Conditionally show Market Scanner */}
+              <NavItem to="/" icon={<DashboardIcon />} onClick={() => setIsMenuOpen(false)}>Dashboard</NavItem>
               {ENABLE_SCANNER_UI && (
-                <NavItem to="/scanner" icon={<ScannerIcon />}>Market Scanner</NavItem>
+                <NavItem to="/scanner" icon={<ScannerIcon />} onClick={() => setIsMenuOpen(false)}>Market Scanner</NavItem>
               )}
-              <NavItem to="/trades" icon={<ListIcon />}>Trades</NavItem>
-              <NavItem to="/strategies" icon={<StrategyIcon />}>Strategies</NavItem>
-              <NavItem to="/analytics" icon={<AnalyticsIcon />}>Analytics</NavItem>
-              <NavItem to="/settings" icon={<SettingsIcon />}>Settings</NavItem>
+              <NavItem to="/trades" icon={<ListIcon />} onClick={() => setIsMenuOpen(false)}>Trades</NavItem>
+              <NavItem to="/strategies" icon={<StrategyIcon />} onClick={() => setIsMenuOpen(false)}>Strategies</NavItem>
+              <NavItem to="/analytics" icon={<AnalyticsIcon />} onClick={() => setIsMenuOpen(false)}>Analytics</NavItem>
+              <NavItem to="/settings" icon={<SettingsIcon />} onClick={() => setIsMenuOpen(false)}>Settings</NavItem>
             </nav>
           </aside>
-          <main className="ml-20 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
+          <header className="fixed top-0 left-0 right-0 h-16 bg-gray-800/80 backdrop-blur-sm flex items-center justify-between px-4 z-30 md:hidden">
+            <button onClick={() => setIsMenuOpen(true)}>
+              <MenuIcon />
+            </button>
+            <img src="/ptlogo.png" alt="Paper Trader logo" className="h-8 w-auto" />
+            <div className="w-6" /> {/* Spacer for symmetry */}
+          </header>
+          <main className="pt-16 md:pt-0 ml-0 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -126,15 +145,17 @@ interface NavItemProps {
   to: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  onClick?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, children }) => {
+const NavItem: React.FC<NavItemProps> = ({ to, icon, children, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
 
   return (
     <NavLink
       to={to}
+      onClick={onClick}
       className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors justify-center md:justify-start ${isActive ? 'bg-primary/20 text-primary-light ring-1 ring-primary/30' : ''}`}
     >
       {icon}
