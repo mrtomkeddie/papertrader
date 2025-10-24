@@ -22,17 +22,33 @@ const isCryptoWindow = () => {
   return h >= 13 && h < 22;
 };
 
+const isOverlapWindow = () => {
+  return isForexWindow() && isCryptoWindow();
+};
+
+function getActiveMarketForBucket(now: Date): 'forex' | 'crypto' | 'none' {
+  if (isOverlapWindow()) {
+    const bucket = Math.floor(now.getUTCMinutes() / 5);
+    return (bucket % 2 === 0) ? 'forex' : 'crypto';
+  }
+  if (isForexWindow()) return 'forex';
+  if (isCryptoWindow()) return 'crypto';
+  return 'none';
+}
+
 let lastRunKey = '';
 const alreadyRanThisInterval = () => {
   const now = new Date();
   const minuteBucket = Math.floor(now.getUTCMinutes() / 5);
-  const key = `${now.toDateString()}-${now.getUTCHours()}-${minuteBucket}-${isForexWindow() ? 'forex' : isCryptoWindow() ? 'crypto' : 'none'}`;
+  const market = getActiveMarketForBucket(now);
+  const key = `${now.toDateString()}-${now.getUTCHours()}-${minuteBucket}-${market}`;
   if (key === lastRunKey) return true;
   lastRunKey = key;
   return false;
 };
 
-const getWindowName = (): 'forex' | 'crypto' | 'none' => {
+const getWindowName = (): 'forex' | 'crypto' | 'overlap' | 'none' => {
+  if (isOverlapWindow()) return 'overlap';
   if (isForexWindow()) return 'forex';
   if (isCryptoWindow()) return 'crypto';
   return 'none';
@@ -82,9 +98,14 @@ async function tick() {
     return;
   }
 
+  const activeMarket: 'forex' | 'crypto' | 'none' = windowName === 'overlap' ? getActiveMarketForBucket(new Date()) : windowName;
+  if (windowName === 'overlap') {
+    msgs.push(`Overlap mode: scanning ${activeMarket}`);
+    console.log(`[Scheduler] Overlap: scanning ${activeMarket}.`);
+  }
   const universe = [
-    ...(windowName === 'forex' ? SELECTED_INSTRUMENTS.filter(m => m.category === 'Forex') : []),
-    ...(windowName === 'crypto' ? SELECTED_INSTRUMENTS.filter(m => m.category === 'Crypto') : []),
+    ...(activeMarket === 'forex' ? SELECTED_INSTRUMENTS.filter(m => m.category === 'Forex') : []),
+    ...(activeMarket === 'crypto' ? SELECTED_INSTRUMENTS.filter(m => m.category === 'Crypto') : []),
   ];
 
   const ops: Opportunity[] = [];
@@ -204,12 +225,43 @@ function scheduleNext() {
   }
 }
 
+// Maintain open positions outside market windows at a low-rate heartbeat
+async function maintainOpenPositions() {
+  try {
+    const open = await db.getOpenPositions();
+    if (open.length === 0) {
+      console.log('[Scheduler] Heartbeat: no open positions.');
+      return;
+    }
+    console.log(`[Scheduler] Heartbeat: checking ${open.length} open position(s).`);
+    await runPriceCheckAdmin();
+  } catch (err) {
+    console.error('[Scheduler] Heartbeat error:', err);
+  }
+}
+
+function scheduleHeartbeat() {
+  // Run every 15 minutes; perform work only if windows are closed
+  setTimeout(() => {
+    try {
+      const wn = getWindowName();
+      if (wn === 'none') {
+        maintainOpenPositions().catch(err => console.error('[Scheduler] Heartbeat tick error:', err));
+      }
+    } finally {
+      scheduleHeartbeat();
+    }
+  }, 15 * 60_000);
+}
+
 async function main() {
   console.log('[Scheduler] Starting... Enabled:', enabled);
   // First run immediately
   await tick();
   // Then schedule dynamically: every minute in-session, otherwise only at next window open
   scheduleNext();
+  // Also start the low-rate heartbeat to enforce exits overnight
+  scheduleHeartbeat();
 }
 
 // Basic safety for unhandled errors
