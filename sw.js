@@ -2,6 +2,9 @@ import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { clientsClaim } from 'workbox-core';
 
+// Force new service worker to activate immediately to reduce stale caches
+self.skipWaiting();
+
 import { initializeApp } from 'firebase/app';
 import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 
