@@ -1,5 +1,5 @@
 import { adminDb } from './firebaseAdmin';
-import { Position, PositionStatus, Explanation, LedgerEntry, LedgerRefType, SchedulerActivity } from '../types';
+import { Position, PositionStatus, Explanation, LedgerEntry, SchedulerActivity, Signal } from '../types';
 
 // --- Positions ---
 const positionsCol = adminDb.collection('positions');
@@ -52,4 +52,12 @@ export const addLedgerEntry = async (entry: Omit<LedgerEntry, 'id' | 'cash_after
 // --- Scheduler Activity ---
 export const updateSchedulerActivity = async (activity: SchedulerActivity): Promise<void> => {
   await adminDb.collection('scheduler').doc('activity').set(activity, { merge: true });
+};
+
+// --- Signals ---
+const signalsCol = adminDb.collection('signals');
+
+export const getSignals = async (): Promise<Signal[]> => {
+  const snap = await signalsCol.get();
+  return snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Signal, 'id'>) }));
 };

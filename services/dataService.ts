@@ -26,12 +26,13 @@ async function fetchBinanceKlines(symbol: string, interval: string = '1h', limit
 // Fetch OHLC from Alpha Vantage for forex
 // Requires ALPHA_VANTAGE_API_KEY in .env
 async function fetchAlphaVantageForex(symbol: string, interval: string = '60min', outputsize: string = 'compact'): Promise<OhlcData[]> {
-  const apiKey = process.env.ALPHA_VANTAGE_API_KEY || import.meta.env.VITE_ALPHA_VANTAGE_API_KEY;
+  const apiKey = process.env.ALPHA_VANTAGE_API_KEY || process.env.VITE_ALPHA_VANTAGE_API_KEY;
   if (!apiKey) {
     throw new Error('Alpha Vantage API key not configured.');
   }
-  const fromSymbol = symbol.slice(0, 3);
-  const toSymbol = symbol.slice(3);
+  const pair = symbol.includes(':') ? symbol.split(':')[1] : symbol; // e.g., FX:EURUSD -> EURUSD
+  const fromSymbol = pair.slice(0, 3);
+  const toSymbol = pair.slice(3);
   const url = `https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&interval=${interval}&outputsize=${outputsize}&apikey=${apiKey}`;
   const response = await fetch(url);
   if (!response.ok) {
@@ -40,7 +41,8 @@ async function fetchAlphaVantageForex(symbol: string, interval: string = '60min'
   const data = await response.json();
   const timeSeries = data[`Time Series FX (${interval})`];
   if (!timeSeries) {
-    throw new Error('No data returned from Alpha Vantage.');
+    // Graceful no-data handling; let caller decide to fallback
+    return [];
   }
   return Object.entries(timeSeries).map(([time, values]: [string, any]) => ({
     time: Math.floor(new Date(time).getTime() / 1000),
@@ -57,14 +59,28 @@ export async function fetchOHLC(symbol: string, interval: string = '1h', limit: 
   if (isCrypto(symbol)) {
     return fetchBinanceKlines(symbol, interval, limit);
   } else {
-    // For forex, use 60min if interval is 1h, adjust as needed
     const avInterval = interval === '1h' ? '60min' : interval;
-    return fetchAlphaVantageForex(symbol, avInterval, limit <= 100 ? 'compact' : 'full');
+    try {
+      const av = await fetchAlphaVantageForex(symbol, avInterval, limit <= 100 ? 'compact' : 'full');
+      if (av.length > 0) return av;
+      // If AV returns empty, fallback to Yahoo
+      const pair = symbol.includes(':') ? symbol.split(':')[1] : symbol; // e.g., FX:EURUSD -> EURUSD
+      const end = new Date();
+      const start = new Date(end.getTime() - limit * 60 * 60 * 1000);
+      return await fetchYahooFinanceHistorical(`${pair}=X`, start.toISOString(), end.toISOString(), interval);
+    } catch (err) {
+      const pair = symbol.includes(':') ? symbol.split(':')[1] : symbol; // e.g., FX:EURUSD -> EURUSD
+      const end = new Date();
+      const start = new Date(end.getTime() - limit * 60 * 60 * 1000);
+      return await fetchYahooFinanceHistorical(`${pair}=X`, start.toISOString(), end.toISOString(), interval);
+    }
   }
 }
-
+export async function fetchOHLCV(symbol: string, interval: string = '1h', limit: number = 100): Promise<OhlcData[]> {
+  return fetchOHLC(symbol, interval, limit);
+}
 // Fetch historical OHLC from Binance for crypto with date range
-async function fetchBinanceKlines(symbol: string, interval: string = '1h', start: number, end: number): Promise<OhlcData[]> {
+async function fetchBinanceKlinesRange(symbol: string, interval: string = '1h', start: number, end: number): Promise<OhlcData[]> {
   const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&startTime=${start}&endTime=${end}&limit=1000`;
   const response = await fetch(url);
   if (!response.ok) {
@@ -81,20 +97,34 @@ async function fetchBinanceKlines(symbol: string, interval: string = '1h', start
   }));
 }
 
-// Fetch historical OHLC from Yahoo Finance for forex
-import yahooFinance from 'yahoo-finance2';
-
-async function fetchYahooFinanceHistorical(symbol: string, start: string, end: string, interval: string = '1h'): Promise<OhlcData[]> {
-  const queryOptions = { period1: start, period2: end, interval };
-  const result = await yahooFinance.historical(symbol, queryOptions);
-  return result.map((bar: any) => ({
-    time: Math.floor(new Date(bar.date).getTime() / 1000),
-    open: bar.open,
-    high: bar.high,
-    low: bar.low,
-    close: bar.close,
-    volume: bar.volume || 0,
-  }));
+// Fetch historical OHLC from Yahoo Finance Chart API for forex
+async function fetchYahooFinanceHistorical(symbol: string, startISO: string, endISO: string, interval: string = '1h'): Promise<OhlcData[]> {
+  const period1 = Math.floor(new Date(startISO).getTime() / 1000);
+  const period2 = Math.floor(new Date(endISO).getTime() / 1000);
+  const yahooInterval = interval === '1h' ? '60m' : interval;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${period1}&period2=${period2}&interval=${yahooInterval}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    return [];
+  }
+  const data = await response.json();
+  const result = data?.chart?.result?.[0];
+  if (!result) return [];
+  const timestamps: number[] = result.timestamp ?? [];
+  const quote = result?.indicators?.quote?.[0] ?? {};
+  const open = quote.open ?? [];
+  const high = quote.high ?? [];
+  const low = quote.low ?? [];
+  const close = quote.close ?? [];
+  const volume = quote.volume ?? [];
+  return timestamps.map((t, i) => ({
+    time: t,
+    open: open[i] ?? close[i] ?? 0,
+    high: high[i] ?? close[i] ?? 0,
+    low: low[i] ?? close[i] ?? 0,
+    close: close[i] ?? 0,
+    volume: volume[i] ?? 0,
+  })).filter(c => Number.isFinite(c.close));
 }
 
 // Updated historical fetch
@@ -103,10 +133,8 @@ export async function fetchHistoricalOHLC(symbol: string, interval: string, star
   const endMs = new Date(end).getTime();
 
   if (isCrypto(symbol)) {
-    return fetchBinanceKlines(symbol, interval, startMs, endMs);
+    return fetchBinanceKlinesRange(symbol, interval, startMs, endMs);
   } else {
     return fetchYahooFinanceHistorical(symbol + '=X', start, end, interval); // Append '=X' for forex pairs
   }
 }
-
-// Remove or comment out the old fetchOHLC if not needed, or keep for recent data

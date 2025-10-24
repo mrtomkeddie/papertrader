@@ -227,7 +227,7 @@ const closePosition = async (position: Position, exitPrice: number, reason: stri
         ts: now,
         delta_gbp: pnl_gbp,
         cash_after: 0,
-        ref_type: LedgerRefType.PNL,
+        ref_type: LedgerRefType.EXIT,
         ref_id: position.id,
     });
 
