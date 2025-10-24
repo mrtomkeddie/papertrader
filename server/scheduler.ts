@@ -159,12 +159,57 @@ async function tick() {
   });
 }
 
+// Dynamic scheduling to avoid minute-by-minute ticks outside market hours
+function getNextForexStartUtc(now: Date): Date {
+  // Forex window: Mon-Fri, 12:00–20:00 UTC. Return next 12:00 UTC on a weekday strictly after now.
+  for (let i = 0; i < 8; i++) {
+    const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + i, 12, 0, 0));
+    const dow = candidate.getUTCDay(); // 0=Sun, 6=Sat
+    if (dow >= 1 && dow <= 5 && candidate > now) return candidate;
+  }
+  // Fallback (shouldn't happen): next Monday 12:00 UTC
+  const daysUntilMonday = (8 - now.getUTCDay()) % 7 || 7;
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilMonday, 12, 0, 0));
+}
+
+function getNextCryptoStartUtc(now: Date): Date {
+  // Crypto window: Daily, 13:00–22:00 UTC. Return next 13:00 UTC strictly after now.
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 13, 0, 0));
+  if (today > now) return today;
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 13, 0, 0));
+}
+
+function msToNextWindowStart(): number {
+  const now = new Date();
+  const forexStart = getNextForexStartUtc(now).getTime();
+  const cryptoStart = getNextCryptoStartUtc(now).getTime();
+  const nextStart = Math.min(forexStart, cryptoStart);
+  const diff = nextStart - now.getTime();
+  // Guard: never schedule less than 30 seconds
+  return Math.max(diff, 30_000);
+}
+
+function scheduleNext() {
+  const windowName = getWindowName();
+  if (windowName === 'none') {
+    const delay = msToNextWindowStart();
+    console.log(`[Scheduler] Outside market hours. Next tick in ${(delay / 60000).toFixed(1)} min.`);
+    setTimeout(() => {
+      tick().catch(err => console.error('[Scheduler] Tick error:', err)).finally(scheduleNext);
+    }, delay);
+  } else {
+    setTimeout(() => {
+      tick().catch(err => console.error('[Scheduler] Tick error:', err)).finally(scheduleNext);
+    }, 60_000);
+  }
+}
+
 async function main() {
   console.log('[Scheduler] Starting... Enabled:', enabled);
   // First run immediately
   await tick();
-  // Then run every minute
-  setInterval(() => { tick().catch(err => console.error('[Scheduler] Tick error:', err)); }, 60_000);
+  // Then schedule dynamically: every minute in-session, otherwise only at next window open
+  scheduleNext();
 }
 
 // Basic safety for unhandled errors
