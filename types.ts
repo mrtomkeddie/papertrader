@@ -65,6 +65,7 @@ export interface Explanation {
   id: string; // Added to align with Firestore document IDs
   position_id: string;
   plain_english_entry: string;
+  beginner_friendly_entry?: string | null; // New: simplified explanation for non-technical readers
   exit_reason: string | null;
   failure_analysis?: string | null;
   review_notes?: string;

@@ -1,6 +1,6 @@
 import * as db from './database'; // Now uses Firestore-backed functions
 import { TradingViewPayload, Signal, Side, Position, PositionStatus, LedgerRefType, StopLogic, Strategy, Explanation, AiTradeAction } from '../types';
-import { generateExplanationText, generateFailureAnalysis } from './geminiService';
+import { generateExplanationText, generateFailureAnalysis, generateBeginnerExplanationText } from './geminiService';
 
 export const handleWebhook = async (payload: TradingViewPayload): Promise<{success: boolean, message: string}> => {
     // Idempotency check
@@ -81,11 +81,15 @@ export const handleWebhook = async (payload: TradingViewPayload): Promise<{succe
     };
     const addedPosition = await db.addPosition(newPosition); // Await addPosition
 
-    // Generate explanation
-    const explanationText = await generateExplanationText(addedPosition, strategy);
+    // Generate explanations (standard + beginner)
+    const [explanationText, beginnerText] = await Promise.all([
+      generateExplanationText(addedPosition, strategy),
+      generateBeginnerExplanationText(addedPosition, strategy)
+    ]);
     const newExplanation: Omit<Explanation, 'id'> = {
       position_id: addedPosition.id,
       plain_english_entry: explanationText,
+      beginner_friendly_entry: beginnerText,
       exit_reason: null,
     };
     await db.addExplanation(newExplanation); // Await addExplanation
@@ -138,9 +142,24 @@ export const executeAiTrade = async (trade: NonNullable<AiTradeAction['trade']>,
     };
     const addedPosition = await db.addPosition(newPosition); // Await addPosition
 
+    const beginnerText = await generateBeginnerExplanationText(addedPosition, {
+      id: 'ai-generated',
+      name: trade.strategy_type,
+      symbol,
+      timeframe: trade.suggested_timeframe || '1H',
+      risk_per_trade_gbp: riskAmountGbp,
+      stop_logic: (trade.strategy_type?.toUpperCase().includes('SWING') ? StopLogic.SWING : StopLogic.ATR),
+      atr_mult: 1.5,
+      take_profit_R: Math.max(1.5, trade.risk_reward_ratio || 2),
+      slippage_bps: trade.slippage_bps,
+      fee_bps: trade.fee_bps,
+      enabled: true,
+    }, trade.reason);
+
     const newExplanation: Omit<Explanation, 'id'> = {
       position_id: addedPosition.id,
       plain_english_entry: `AI Trade (${trade.strategy_type}): ${trade.reason}`,
+      beginner_friendly_entry: beginnerText,
       exit_reason: null,
     };
     await db.addExplanation(newExplanation); // Await addExplanation

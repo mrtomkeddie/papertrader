@@ -1,6 +1,6 @@
 import * as db from './adminDatabase';
 import { AiTradeAction, Side, Position, PositionStatus, LedgerRefType, Explanation } from '../types';
-import { generateExplanationText, generateFailureAnalysis } from '../services/geminiService';
+import { generateExplanationText, generateFailureAnalysis, generateBeginnerExplanationText } from '../services/geminiService';
 import { sendPushNotificationToAll } from './notificationService';
 import { fetchOHLCV } from '../services/dataService';
 
@@ -91,7 +91,7 @@ export const executeAiTrade = async (
 
   const addedPosition = await db.addPosition(newPosition);
 
-  const explanationText = await generateExplanationText(addedPosition, {
+  const strategyForText = {
     id: 'ai-generated',
     name: trade.strategy_type,
     symbol,
@@ -103,11 +103,15 @@ export const executeAiTrade = async (
     slippage_bps: trade.slippage_bps,
     fee_bps: trade.fee_bps,
     enabled: true,
-  } as any, trade.reason);
+  } as any;
+
+  const explanationText = await generateExplanationText(addedPosition, strategyForText, trade.reason);
+  const beginnerText = await generateBeginnerExplanationText(addedPosition, strategyForText, trade.reason);
 
   const newExplanation: Omit<Explanation, 'id'> = {
     position_id: addedPosition.id,
     plain_english_entry: explanationText,
+    beginner_friendly_entry: beginnerText,
     exit_reason: null,
   };
   await db.addExplanation(newExplanation);

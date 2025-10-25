@@ -32,6 +32,11 @@ const deterministicExplanation = (position: Position, strategy: Strategy): strin
   return `Entered ${position.side} on ${position.symbol} based on a signal from TradingView at ${formatDateTime(position.entry_ts)}. Entry price: ${formatPrice(position.entry_price)}. Stop-loss was set using the ${strategy.stop_logic} method (ATR multiplier: ${strategy.atr_mult}) at ${formatPrice(position.stop_price)}. The take-profit target was set at a ${strategy.take_profit_R}R multiple, targeting a price of ${formatPrice(position.tp_price)}. The total amount at risk for this trade was £${strategy.risk_per_trade_gbp}.`;
 };
 
+// Beginner-friendly deterministic explanation
+const deterministicBeginnerExplanation = (position: Position, strategy: Strategy): string => {
+  return `We opened a ${position.side.toLowerCase()} trade on ${position.symbol}. The buy/sell price was ${formatPrice(position.entry_price)} on ${formatDateTime(position.entry_ts)}. If the price moves the wrong way, we plan to exit at ${formatPrice(position.stop_price)} (this is a safety level). If it moves in our favor, we aim to take profit near ${formatPrice(position.tp_price)}. We risk about £${strategy.risk_per_trade_gbp.toFixed(2)} on this trade so losses are limited.`;
+};
+
 // Deterministic failure analysis used when AI is unavailable or errors (for losing trades)
 const deterministicFailureAnalysis = (position: Position, explanation: Explanation): string => {
   const lossGbp = position.pnl_gbp ? Math.abs(position.pnl_gbp).toFixed(2) : "unknown";
@@ -90,6 +95,45 @@ export const generateExplanationText = async (position: Position, strategy: Stra
   } catch (error: any) {
     console.error("Error generating explanation with Gemini:", error.message || String(error));
     return deterministicExplanation(position, strategy);
+  }
+};
+
+// Beginner-friendly explanation generator
+export const generateBeginnerExplanationText = async (position: Position, strategy: Strategy, strategyReason?: string): Promise<string> => {
+  if (!ai) {
+    return deterministicBeginnerExplanation(position, strategy);
+  }
+
+  const reasonPart = strategyReason ? `- Strategy Reason: ${strategyReason}` : '';
+
+  const prompt = `
+    Explain this trade in very simple, beginner-friendly language.
+    Avoid jargon and acronyms. If you must use a term, define it briefly.
+    Use 2-4 short sentences.
+
+    **Trade Data:**
+    - Symbol: ${position.symbol}
+    - Side: ${position.side}
+    - Entry Time: ${formatDateTime(position.entry_ts)}
+    - Entry Price: ${formatPrice(position.entry_price)}
+    - Stop Price (safety level to limit loss): ${formatPrice(position.stop_price)}
+    - Take Profit Price (target where we plan to take gains): ${formatPrice(position.tp_price)}
+    - Risk per trade in GBP: £${strategy.risk_per_trade_gbp.toFixed(2)}
+    ${reasonPart}
+
+    **Return:**
+    Only the beginner-friendly paragraph.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
+    });
+    return response.text;
+  } catch (error: any) {
+    console.error("Error generating beginner explanation with Gemini:", error.message || String(error));
+    return deterministicBeginnerExplanation(position, strategy);
   }
 };
 
@@ -154,30 +198,17 @@ export const getAiTradeAction = async (symbol: string, requestedTimeframe: strin
         2.  **Execution Timeframe Analysis (Scan 4H, 1H, 15m):** Look for a specific, high-probability trading setup (e.g., breakout, pullback, reversal pattern) on various execution timeframes that aligns with the high-timeframe context.
         3.  **Optimal Timeframe Selection:** From your analysis, decide which timeframe (e.g., "1H", "4H") presents the clearest signal and the best structure for defining entry, stop, and target levels. This is the 'suggested_timeframe'.
         4.  **Risk/Reward Assessment:** Based on the setup on the optimal timeframe, you MUST calculate the risk/reward ratio (RRR). A professional trader rarely takes a trade with an RRR below 1.5.
-        5.  **Volatility & Liquidity:** Based on the asset, determine appropriate slippage and fee assumptions in basis points (bps).
 
-        **Decision Logic:**
-        -   If a setup on an optimal execution timeframe aligns with the higher timeframe trend AND the RRR is **1.5 or greater**, propose a "TRADE".
-        -   If there is a conflict between timeframes, recommend "HOLD".
-        -   If the technical setup is valid but the RRR is **less than 1.5**, recommend "HOLD".
-        -   If the market is unclear, recommend "HOLD".
-
-        **Allowed Strategies:**
-        - Opening-Range Breakout (ORB)
-        - Trend Pullback / Break-and-Retest
-        - VWAP Reversion
-
-        You MUST set trade.strategy_type to exactly one of the allowed strategies. Do not propose trades using any other method.
-
-        **Today's date is ${new Date().toDateString()}.**
+        **Return:**
+        Respond ONLY with a compact JSON object containing {action, trade? , hold_reason?} matching the response schema.
     `;
-    
+
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash", 
             contents: prompt,
             config: {
-                systemInstruction: "You are a professional technical analyst. Your goal is to identify high-probability trades by performing top-down, multi-timeframe analysis. You must reject trades with an RRR below 1.5 and suggest the optimal execution timeframe. Respond only with the requested JSON object.",
+                systemInstruction: "You are a professional technical analyst. Your goal is to identify high-probability trades by performing top-down, multi-timeframe analysis. You must reject trades with an RRR below 1.5 and suggest the optimal execution timeframe. Respond only with the requested JSON.",
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,

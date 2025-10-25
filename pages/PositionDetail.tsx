@@ -4,7 +4,7 @@ import { useDatabase } from '../hooks/useDatabase';
 import * as db from '../services/database'; // Now uses Firestore-backed functions
 import { Side, PositionStatus, Position, Explanation, Strategy } from '../types';
 import TradingViewWidget from '../components/TradingViewWidget';
-import { generateExplanationText, generateFailureAnalysis } from '../services/geminiService';
+import { generateFailureAnalysis } from '../services/geminiService';
 import AnnotatedChart from '../components/AnnotatedChart';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color = 'text-white' }) => (
@@ -31,40 +31,12 @@ const PositionDetail: React.FC = () => {
     return strategies.find(s => s.id === position.strategy_id);
   }, [position, strategies]);
   
-  // Regenerate explanation state
-  const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
-  const [regenError, setRegenError] = useState<string | null>(null);
-  const [regenSuccess, setRegenSuccess] = useState<boolean>(false);
 
   // Regenerate failure analysis state
   const [isRegeneratingAnalysis, setIsRegeneratingAnalysis] = useState<boolean>(false);
   const [regenAnalysisError, setRegenAnalysisError] = useState<string | null>(null);
   const [regenAnalysisSuccess, setRegenAnalysisSuccess] = useState<boolean>(false);
 
-  const handleRegenerateExplanation = async () => {
-    if (!position || !strategy) {
-      setRegenError('Missing strategy for this position. Enable the strategy to regenerate.');
-      return;
-    }
-    setIsRegenerating(true);
-    setRegenError(null);
-    setRegenSuccess(false);
-    try {
-      const text = await generateExplanationText(position, strategy);
-      if (explanation?.id) {
-        const updated: Explanation = { ...explanation, plain_english_entry: text, failure_analysis: null };
-        await db.updateExplanation(updated);
-      } else {
-        await db.addExplanation({ position_id: position.id, plain_english_entry: text, exit_reason: null });
-      }
-      setRegenSuccess(true);
-    } catch (err: any) {
-      setRegenError(err?.message ?? 'Failed to regenerate explanation');
-    } finally {
-      setIsRegenerating(false);
-      setTimeout(() => setRegenSuccess(false), 2500);
-    }
-  };
 
   const handleRegenerateFailureAnalysis = async () => {
     if (!position || !explanation) {
@@ -116,19 +88,15 @@ const PositionDetail: React.FC = () => {
       <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
           <h3 className="text-base sm:text-xl font-semibold text-primary-light">Trade Explanation</h3>
-          <div className="flex w-full sm:w-auto items-center justify-start sm:justify-end gap-2 sm:gap-3">
-            {regenSuccess && <span className="text-green-400 text-sm">Updated</span>}
-            {regenError && <span className="text-red-400 text-sm">{regenError}</span>}
-            <button
-              className="px-3 sm:px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-60"
-              disabled={isRegenerating || !strategy}
-              onClick={handleRegenerateExplanation}
-            >{isRegenerating ? 'Regenerating…' : 'Regenerate Explanation'}</button>
-          </div>
         </div>
         <p className="text-xs sm:text-base text-gray-300 leading-relaxed">{explanation?.plain_english_entry || 'No explanation available.'}</p>
+        {explanation?.beginner_friendly_entry && (
+          <div className="mt-3 sm:mt-4">
+            <p className="text-xs sm:text-sm text-gray-400 font-medium">In simple terms</p>
+            <p className="text-xs sm:text-base text-gray-300 leading-relaxed">{explanation.beginner_friendly_entry}</p>
+          </div>
+        )}
         {explanation?.exit_reason && <p className="mt-3 sm:mt-4 text-xs sm:text-base text-gray-300"><strong>Exit Reason:</strong> {explanation.exit_reason}</p>}
-      </div>
 
       {explanation?.failure_analysis && (
         <div className="bg-red-900/20 border border-red-700/50 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
