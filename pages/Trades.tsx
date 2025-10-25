@@ -115,11 +115,10 @@ const Trades: React.FC = () => {
       <h2 className="text-2xl sm:text-3xl font-bold text-white">All Trades</h2>
 
       {/* Filter bar */}
-      -      <div className="sm:static sticky top-0 z-10 -mx-4 px-4 py-3 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-md md:rounded-none">
-      +      <div className="sm:static sticky top-0 z-10 relative overflow-hidden px-5 sm:px-6 py-4 sm:py-5 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-lg ring-1 ring-white/10">
-      +        <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-r from-white/5 via-transparent to-white/5" />
-      +        <div className="relative z-10">
-      +        <h3 className="text-sm font-semibold text-primary-light mb-2">Filters</h3>
+      <div className="sm:static sticky top-0 z-10 relative overflow-hidden px-5 sm:px-6 py-4 sm:py-5 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-lg ring-1 ring-white/10">
+        <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-r from-white/5 via-transparent to-white/5" />
+        <div className="relative z-10">
+          <h3 className="text-sm font-semibold text-primary-light mb-2">Filters</h3>
              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="overflow-x-auto no-scrollbar -mx-1">
                  <div className="inline-flex gap-3 px-1 whitespace-nowrap">
@@ -133,16 +132,13 @@ const Trades: React.FC = () => {
                      <button
                        key={key}
                        onClick={() => setQuickRange(key as 'all'|'today'|'7d'|'30d'|'month')}
--                      className={`px-4 py-2 text-sm leading-5 font-medium rounded-full border border-white/20 transition-colors ${quickRange === key ? 'bg-primary text-white shadow-sm' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
-+                      className={`px-4 py-2 text-sm leading-5 font-medium rounded-full border border-white/20 transition-colors min-w-[96px] ${quickRange === key ? 'bg-primary text-white shadow-sm' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
+                       className={`px-4 py-2 text-sm leading-5 font-medium rounded-full border border-white/20 transition-colors min-w-[96px] ${quickRange === key ? 'bg-primary text-white shadow-sm' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
                      >
                        {label}
                      </button>
                    ))}
-                   -              <button onClick={clearFilters} className="px-4 py-2 text-sm leading-5 font-medium rounded-full bg-gray-600 text-white hover:bg-gray-500 transition-colors">Clear</button>
-                   -              <button onClick={() => setFiltersExpanded(v => !v)} className="sm:hidden px-4 py-2 text-sm leading-5 font-medium rounded-full bg-gray-600 text-white hover:bg-gray-500 transition-colors">
-                   +              <button onClick={clearFilters} className="px-4 py-2 text-sm leading-5 font-medium rounded-full min-w-[96px] bg-gray-600 text-white hover:bg-gray-500 transition-colors">Clear</button>
-                   +              <button onClick={() => setFiltersExpanded(v => !v)} className="sm:hidden px-4 py-2 text-sm leading-5 font-medium rounded-full min-w-[96px] bg-gray-600 text-white hover:bg-gray-500 transition-colors">
+                   <button onClick={clearFilters} className="px-4 py-2 text-sm leading-5 font-medium rounded-full min-w-[96px] bg-gray-600 text-white hover:bg-gray-500 transition-colors">Clear</button>
+                   <button onClick={() => setFiltersExpanded(v => !v)} className="sm:hidden px-4 py-2 text-sm leading-5 font-medium rounded-full min-w-[96px] bg-gray-600 text-white hover:bg-gray-500 transition-colors">
                      {filtersExpanded ? 'Hide filters' : 'More filters'}
                    </button>
                  </div>
@@ -170,8 +166,8 @@ const Trades: React.FC = () => {
                  <DatePicker label="End date" value={endDate} onChange={setEndDate} />
                </div>
              </div>
-+        </div>
-       </div>
+        </div>
+      </div>
       {/* Mobile: card list */}
       <div className="block md:hidden">
         <div className="space-y-3">
