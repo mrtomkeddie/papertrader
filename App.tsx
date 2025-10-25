@@ -4,11 +4,7 @@ import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-do
 import Dashboard from './pages/Dashboard';
 const Trades = React.lazy(() => import('./pages/Trades'));
 const PositionDetail = React.lazy(() => import('./pages/PositionDetail'));
-const Strategies = React.lazy(() => import('./pages/Strategies'));
-const Settings = React.lazy(() => import('./pages/Settings'));
-const Scanner = React.lazy(() => import('./pages/Scanner'));
-const Analytics = React.lazy(() => import('./pages/Analytics'));
-import { DashboardIcon, ListIcon, StrategyIcon, SettingsIcon, ScannerIcon, AnalyticsIcon } from './components/icons/Icons';
+import { DashboardIcon, ListIcon } from './components/icons/Icons';
 import { auth } from './services/firebase';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { initDb } from './services/database';
@@ -21,15 +17,12 @@ import { Explanation } from './types';
 import { ListIcon as MenuIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
-  // Read feature flags from Vite env
-  const ENABLE_SCANNER_UI = (import.meta.env.VITE_ENABLE_SCANNER_UI === '1' || import.meta.env.VITE_ENABLE_SCANNER_UI === 'true');
   const [isAuthed, setIsAuthed] = useState<boolean>(!!auth.currentUser);
   const [authError, setAuthError] = useState<string | null>(null);
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setIsAuthed(!!user);
       if (user) {
-        // Seed Firestore after authenticated sign-in
         initDb().catch(err => console.error('Failed to initialize database:', err));
       }
     });
@@ -37,6 +30,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!isAuthed) return;
     const explanationsCollection = collection(db, 'explanations');
     let isInitial = true;
     const unsubscribe = onSnapshot(explanationsCollection, (snapshot: QuerySnapshot) => {
@@ -61,9 +55,8 @@ const App: React.FC = () => {
       });
     });
     return () => unsubscribe();
-  }, []);
+  }, [isAuthed]);
 
-  // Removed periodic price check interval to eliminate background overhead
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleGoogleSignIn = async () => {
@@ -88,7 +81,6 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      {/* If not authenticated, show a simple login gate */}
       {!isAuthed ? (
         <div className="min-h-screen flex items-center justify-center bg-slate-900 text-gray-200">
           <div className="bg-gray-800 p-6 rounded-xl shadow-lg text-center">
@@ -108,7 +100,6 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : (
-        // Original app content when authenticated
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-gray-200 font-sans">
           {isMenuOpen && (
             <div 
@@ -129,13 +120,7 @@ const App: React.FC = () => {
             </div>
             <nav className="flex flex-col space-y-2">
               <NavItem to="/" icon={<DashboardIcon />} onClick={() => setIsMenuOpen(false)}>Dashboard</NavItem>
-              {ENABLE_SCANNER_UI && (
-                <NavItem to="/scanner" icon={<ScannerIcon />} onClick={() => setIsMenuOpen(false)}>Market Scanner</NavItem>
-              )}
               <NavItem to="/trades" icon={<ListIcon />} onClick={() => setIsMenuOpen(false)}>Trades</NavItem>
-              <NavItem to="/strategies" icon={<StrategyIcon />} onClick={() => setIsMenuOpen(false)}>Strategies</NavItem>
-              <NavItem to="/analytics" icon={<AnalyticsIcon />} onClick={() => setIsMenuOpen(false)}>Analytics</NavItem>
-              <NavItem to="/settings" icon={<SettingsIcon />} onClick={() => setIsMenuOpen(false)}>Settings</NavItem>
             </nav>
           </aside>
           <header className="fixed top-0 left-0 right-0 h-16 bg-gray-800/80 backdrop-blur-sm flex items-center justify-between px-4 z-30 md:hidden">
@@ -143,22 +128,15 @@ const App: React.FC = () => {
               <MenuIcon />
             </button>
             <img src="/ptlogo.png" alt="Paper Trader logo" className="h-8 w-auto" />
-            <div className="w-6" /> {/* Spacer for symmetry */}
+            <div className="w-6" />
           </header>
           <main className="pt-20 md:pt-6 ml-0 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
             <Suspense fallback={<div className="text-gray-300">Loading…</div>}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
-                {/* Conditionally register Scanner route */}
-                {ENABLE_SCANNER_UI && (
-                  <Route path="/scanner" element={<Scanner />} />
-                )}
                 <Route path="/trades" element={<Trades />} />
                 <Route path="/positions/:id" element={<PositionDetail />} />
-                <Route path="/strategies" element={<Strategies />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Dashboard />} />
               </Routes>
             </Suspense>

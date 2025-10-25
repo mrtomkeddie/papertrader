@@ -59,11 +59,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange, 
 
   return (
     <div className={`relative ${className ?? ''}`} ref={ref}>
-      {label && <label className="text-xs text-gray-400 mb-1 block">{label}</label>}
+      // ...
+      {label && <label className="text-sm font-medium text-gray-300 mb-1.5 block">{label}</label>}
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="w-full bg-gray-900 text-gray-200 rounded px-3 py-2 border border-gray-600 hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
+        className="w-full bg-gray-900 text-gray-200 rounded px-3.5 py-2.5 border border-gray-600 hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
       >
         <div className="flex items-center justify-between">
           <span className={value ? 'text-white' : 'text-gray-400'}>{value ? formatDisplay(value) : 'dd/mm/yyyy'}</span>

@@ -122,7 +122,6 @@ const AnnotatedChart: React.FC<AnnotatedChartProps> = ({
       candleSeries.setMarkers(markers);
 
       chart.timeScale().fitContent();
-    })();
 
     // Resize handling
     const ro = new ResizeObserver(entries => {
