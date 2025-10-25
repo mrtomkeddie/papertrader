@@ -5,6 +5,10 @@ import { clientsClaim } from 'workbox-core';
 // Force new service worker to activate immediately to reduce stale caches
 self.skipWaiting();
 
+// Version bump to trigger mobile clients to update SW and caches
+const SW_VERSION = '2025-10-25-01';
+console.log('[sw] version', SW_VERSION);
+
 import { initializeApp } from 'firebase/app';
 import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 
