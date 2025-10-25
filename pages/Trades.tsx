@@ -121,24 +121,24 @@ const Trades: React.FC = () => {
           <h3 className="text-sm font-semibold text-primary-light mb-2">Filters</h3>
              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="overflow-x-auto no-scrollbar -mx-1">
-                 <div className="inline-flex gap-3 px-1 whitespace-nowrap">
-                   {[
-                     {key: 'all', label: 'All'},
-                     {key: 'today', label: 'Today'},
-                     {key: '7d', label: 'Last 7 days'},
-                     {key: '30d', label: 'Last 30 days'},
-                     {key: 'month', label: 'This month'},
-                   ].map(({key, label}) => (
-                     <button
-                       key={key}
-                       onClick={() => setQuickRange(key as 'all'|'today'|'7d'|'30d'|'month')}
-                       className={`px-4 py-2 text-sm leading-5 font-medium rounded-full border border-white/20 transition-colors min-w-[96px] ${quickRange === key ? 'bg-primary text-white shadow-sm' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
+                 <div className="flex items-center gap-3 px-1">
+                   <div className="w-56">
+                     <label htmlFor="quickRange" className="sr-only">Quick range</label>
+                     <select
+                       id="quickRange"
+                       value={quickRange}
+                       onChange={(e) => setQuickRange(e.target.value as 'all'|'today'|'7d'|'30d'|'month')}
+                       className="w-full bg-gray-900 text-gray-200 rounded px-3.5 py-2.5 border border-gray-600 hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
                      >
-                       {label}
-                     </button>
-                   ))}
-                   <button onClick={clearFilters} className="px-4 py-2 text-sm leading-5 font-medium rounded-full min-w-[96px] bg-gray-600 text-white hover:bg-gray-500 transition-colors">Clear</button>
-                   <button onClick={() => setFiltersExpanded(v => !v)} className="sm:hidden px-4 py-2 text-sm leading-5 font-medium rounded-full min-w-[96px] bg-gray-600 text-white hover:bg-gray-500 transition-colors">
+                       <option value="all">All</option>
+                       <option value="today">Today</option>
+                       <option value="7d">Last 7 days</option>
+                       <option value="30d">Last 30 days</option>
+                       <option value="month">This month</option>
+                     </select>
+                   </div>
+                   <button onClick={clearFilters} className="px-4 py-2 text-sm leading-5 font-medium rounded bg-gray-600 text-white hover:bg-gray-500 transition-colors">Clear</button>
+                   <button onClick={() => setFiltersExpanded(v => !v)} className="sm:hidden px-4 py-2 text-sm leading-5 font-medium rounded bg-gray-600 text-white hover:bg-gray-500 transition-colors">
                      {filtersExpanded ? 'Hide filters' : 'More filters'}
                    </button>
                  </div>
@@ -154,7 +154,6 @@ const Trades: React.FC = () => {
                  </div>
                </div>
              </div>
-             <p className="text-sm text-gray-300 mt-3">Current filter: {currentFilterLabel}</p>
              {/* Divider before mobile date inputs */}
              <div className="sm:hidden h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent mt-3 mb-2" />
              {/* Mobile date range collapsible */}
