@@ -122,14 +122,14 @@ const Trades: React.FC = () => {
              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                <div className="overflow-x-auto no-scrollbar -mx-1">
                  <div className="flex items-center gap-3 px-1">
-                   <div className="w-56">
-                     <label htmlFor="quickRange" className="sr-only">Quick range</label>
-                     <select
-                       id="quickRange"
-                       value={quickRange}
-                       onChange={(e) => setQuickRange(e.target.value as 'all'|'today'|'7d'|'30d'|'month')}
-                       className="w-full bg-gray-900 text-gray-200 rounded px-3.5 py-2.5 border border-gray-600 hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
-                     >
+                   <div className="flex-1 w-full sm:w-56">
+                      <label htmlFor="quickRange" className="sr-only">Quick range</label>
+                      <select
+                        id="quickRange"
+                        value={quickRange}
+                        onChange={(e) => setQuickRange(e.target.value as 'all'|'today'|'7d'|'30d'|'month')}
+                        className="w-full bg-gray-900 text-gray-200 rounded px-3.5 py-2.5 border border-gray-600 hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
                        <option value="all">All</option>
                        <option value="today">Today</option>
                        <option value="7d">Last 7 days</option>
