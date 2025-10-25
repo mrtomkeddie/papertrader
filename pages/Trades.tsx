@@ -145,7 +145,7 @@ const Trades: React.FC = () => {
                </div>
                {/* Divider between quick filters and date inputs (desktop) */}
                {/* Desktop date range inline */}
-               <div className="hidden sm:grid sm:grid-cols-2 sm:gap-4 sm:pl-4">
+               <div className="hidden sm:grid sm:grid-cols-2 sm:gap-3 sm:pl-3">
                  <div className="flex flex-col">
                    <DatePicker label="Start date" value={startDate} onChange={setStartDate} />
                  </div>
@@ -158,7 +158,7 @@ const Trades: React.FC = () => {
              {/* Divider before mobile date inputs */}
              <div className="sm:hidden h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent mt-3 mb-2" />
              {/* Mobile date range collapsible */}
-             <div className={`${filtersExpanded ? 'grid' : 'hidden'} grid-cols-2 gap-4 mt-4 sm:hidden`}>
+             <div className={`${filtersExpanded ? 'grid' : 'hidden'} grid-cols-2 gap-3 mt-3 sm:hidden`}>
                <div className="flex flex-col">
                  <DatePicker label="Start date" value={startDate} onChange={setStartDate} />
                </div>
