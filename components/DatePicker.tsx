@@ -20,13 +20,12 @@ function formatDisplay(value: string): string {
 }
 
 function daysGrid(year: number, month: number): (number|null)[] {
-  const firstDow = new Date(year, month, 1).getDay(); // 0..6 (Sun..Sat)
-  const days = new Date(year, month+1, 0).getDate();
+  const firstDay = new Date(year, month, 1);
+  const startIdx = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   const grid: (number|null)[] = [];
-  for (let i=0;i<firstDow;i++) grid.push(null);
-  for (let d=1; d<=days; d++) grid.push(d);
-  // pad to full weeks
-  while (grid.length % 7 !== 0) grid.push(null);
+  for (let i = 0; i < startIdx; i++) grid.push(null);
+  for (let d = 1; d <= daysInMonth; d++) grid.push(d);
   return grid;
 }
 
@@ -36,6 +35,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange, 
   const [viewYear, setViewYear] = React.useState<number>(selected ? selected.getFullYear() : new Date().getFullYear());
   const [viewMonth, setViewMonth] = React.useState<number>(selected ? selected.getMonth() : new Date().getMonth());
   const ref = React.useRef<HTMLDivElement|null>(null);
+  const [alignRight, setAlignRight] = React.useState(false);
 
   React.useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -45,6 +45,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange, 
     if (open) {
       document.addEventListener('mousedown', onDocClick);
       return () => document.removeEventListener('mousedown', onDocClick);
+    }
+  }, [open]);
+
+  // When opening, decide whether to align the calendar to the right edge
+  // to avoid clipping near the viewport's right side. Assumes calendar width ~256px.
+  React.useEffect(() => {
+    if (open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const calendarWidth = 256; // w-64
+      setAlignRight(rect.left + calendarWidth > window.innerWidth);
     }
   }, [open]);
 
@@ -71,7 +81,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange, 
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-white/10">
+        <div className={`absolute z-50 mt-2 ${alignRight ? 'right-0' : 'left-0'} w-64 max-w-[calc(100vw-2rem)] bg-gray-800 rounded-lg shadow-xl border border-white/10`}>
           <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
             <button className="p-1 text-gray-300 hover:text-white" onClick={() => setViewMonth(m => { const nm = m-1; if (nm < 0) { setViewYear(y => y-1); return 11; } return nm; })} aria-label="Previous month">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
