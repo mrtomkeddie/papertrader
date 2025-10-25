@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config();
-import { SELECTED_INSTRUMENTS, SELECTED_METHODS } from '../constants';
+import { SELECTED_INSTRUMENTS, SELECTED_METHODS, TIMEFRAME_BY_SYMBOL } from '../constants';
 import { getStrategySignals } from '../services/strategyService';
 import { executeAiTrade, runPriceCheckAdmin } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
@@ -17,42 +17,50 @@ const isForexWindow = () => {
   const d = now.getUTCDay();
   return d >= 1 && d <= 5 && h >= 12 && h < 20;
 };
-const isCryptoWindow = () => {
-  const h = new Date().getUTCHours();
-  return h >= 13 && h < 22;
-};
-
-const isOverlapWindow = () => {
-  return isForexWindow() && isCryptoWindow();
-};
-
-function getActiveMarketForBucket(now: Date): 'forex' | 'crypto' | 'none' {
-  if (isOverlapWindow()) {
-    const bucket = Math.floor(now.getUTCMinutes() / 5);
-    return (bucket % 2 === 0) ? 'forex' : 'crypto';
-  }
-  if (isForexWindow()) return 'forex';
-  if (isCryptoWindow()) return 'crypto';
-  return 'none';
-}
 
 let lastRunKey = '';
 const alreadyRanThisInterval = () => {
   const now = new Date();
-  const minuteBucket = Math.floor(now.getUTCMinutes() / 5);
-  const market = getActiveMarketForBucket(now);
-  const key = `${now.toDateString()}-${now.getUTCHours()}-${minuteBucket}-${market}`;
+  const bucket5 = Math.floor(now.getUTCMinutes() / 5);
+  const key = `${now.toDateString()}-${now.getUTCHours()}-${bucket5}`;
   if (key === lastRunKey) return true;
   lastRunKey = key;
   return false;
 };
 
-const getWindowName = (): 'forex' | 'crypto' | 'overlap' | 'none' => {
-  if (isOverlapWindow()) return 'overlap';
-  if (isForexWindow()) return 'forex';
-  if (isCryptoWindow()) return 'crypto';
-  return 'none';
+const getWindowName = (): 'forex' | 'none' => {
+  return isForexWindow() ? 'forex' : 'none';
 };
+
+async function shouldSkipStrategy(strategyName: string, symbol: string): Promise<string | null> {
+  try {
+    const recent = await db.getClosedPositionsForStrategy(strategyName, symbol, 20);
+    if (!recent.length) return null;
+
+    const pnl = recent.map((p) => Number(p.pnl_gbp ?? 0)).filter((v) => Number.isFinite(v));
+    let consecutiveLosses = 0;
+    for (const v of pnl) {
+      if (v <= 0) consecutiveLosses++;
+      else break;
+    }
+    if (consecutiveLosses >= 5) {
+      return `Kill switch: ${strategyName} has ${consecutiveLosses} consecutive losses`;
+    }
+
+    const wins = pnl.filter((v) => v > 0).reduce((a, b) => a + b, 0);
+    const lossesAbs = pnl.filter((v) => v < 0).reduce((a, b) => a + Math.abs(b), 0);
+    const profitFactor = lossesAbs > 0 ? wins / lossesAbs : Infinity;
+
+    if (pnl.length >= 10 && profitFactor < 1.0) {
+      return `Kill switch: ${strategyName} profit factor ${profitFactor.toFixed(2)} < 1.0 over last ${pnl.length} trades`;
+    }
+
+    return null;
+  } catch (e) {
+    console.error('Kill switch check error:', e);
+    return null;
+  }
+}
 
 async function tick() {
   const windowName = getWindowName();
@@ -85,8 +93,8 @@ async function tick() {
     return;
   }
   if (alreadyRanThisInterval()) {
-    msgs.push('Already ran this interval');
-    console.log('[Scheduler] Already ran this interval; skipping.');
+    msgs.push('Already ran this 5-min interval');
+    console.log('[Scheduler] Already ran this 5-min interval; skipping.');
     await db.updateSchedulerActivity({
       last_run_ts: Date.now(),
       window: windowName,
@@ -98,25 +106,24 @@ async function tick() {
     return;
   }
 
-  const activeMarket: 'forex' | 'crypto' | 'none' = windowName === 'overlap' ? getActiveMarketForBucket(new Date()) : windowName;
-  if (windowName === 'overlap') {
-    msgs.push(`Overlap mode: scanning ${activeMarket}`);
-    console.log(`[Scheduler] Overlap: scanning ${activeMarket}.`);
-  }
-  const universe = [
-    ...(activeMarket === 'forex' ? SELECTED_INSTRUMENTS.filter(m => m.category === 'Forex') : []),
-    ...(activeMarket === 'crypto' ? SELECTED_INSTRUMENTS.filter(m => m.category === 'Crypto') : []),
-  ];
+  const universe = SELECTED_INSTRUMENTS.filter(m => m.category === 'Forex');
 
   const ops: Opportunity[] = [];
   for (const m of universe) {
     try {
-      const signals = await getStrategySignals(m.symbol, '1H');
+      const tf = TIMEFRAME_BY_SYMBOL[m.symbol] || '1h';
+      const signals = await getStrategySignals(m.symbol, tf);
       if (signals.length > 0) {
-        // Pick the best signal by RRR
         signals.sort((a, b) => b.rrr - a.rrr);
         const topSignal = signals[0];
         if (!SELECTED_METHODS.includes(topSignal.strategy)) continue;
+
+        const killReason = await shouldSkipStrategy(topSignal.strategy, m.symbol);
+        if (killReason) {
+          msgs.push(`Skipped ${m.symbol} ${topSignal.strategy}: ${killReason}`);
+          continue;
+        }
+
         const trade = {
           side: topSignal.side,
           entry_price: topSignal.entry,
@@ -127,7 +134,7 @@ async function tick() {
           slippage_bps: 5,
           fee_bps: 10,
           risk_reward_ratio: topSignal.rrr,
-          suggested_timeframe: '1H',
+          suggested_timeframe: tf,
         };
         ops.push({ symbol: m.symbol, action: { action: 'TRADE', trade } });
       }
@@ -143,7 +150,6 @@ async function tick() {
     msgs.push('No qualifying opportunities this run');
     console.log('[Scheduler] No qualifying opportunities this run.');
   } else {
-    // Execute all qualifying opportunities without ranking
     for (const op of ops) {
       const trade = op.action.trade!;
       const side = trade.side;
@@ -167,7 +173,6 @@ async function tick() {
     console.log(`[Scheduler] Placed ${placed} trade(s) this run.`);
   }
 
-  // Run price check to potentially close positions
   await runPriceCheckAdmin();
 
   await db.updateSchedulerActivity({
@@ -180,52 +185,32 @@ async function tick() {
   });
 }
 
-// Dynamic scheduling to avoid minute-by-minute ticks outside market hours
 function getNextForexStartUtc(now: Date): Date {
-  // Forex window: Mon-Fri, 12:00–20:00 UTC. Return next 12:00 UTC on a weekday strictly after now.
   for (let i = 0; i < 8; i++) {
     const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + i, 12, 0, 0));
-    const dow = candidate.getUTCDay(); // 0=Sun, 6=Sat
+    const dow = candidate.getUTCDay();
     if (dow >= 1 && dow <= 5 && candidate > now) return candidate;
   }
-  // Fallback (shouldn't happen): next Monday 12:00 UTC
   const daysUntilMonday = (8 - now.getUTCDay()) % 7 || 7;
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilMonday, 12, 0, 0));
-}
-
-function getNextCryptoStartUtc(now: Date): Date {
-  // Crypto window: Daily, 13:00–22:00 UTC. Return next 13:00 UTC strictly after now.
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 13, 0, 0));
-  if (today > now) return today;
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 13, 0, 0));
-}
-
-function msToNextWindowStart(): number {
-  const now = new Date();
-  const forexStart = getNextForexStartUtc(now).getTime();
-  const cryptoStart = getNextCryptoStartUtc(now).getTime();
-  const nextStart = Math.min(forexStart, cryptoStart);
-  const diff = nextStart - now.getTime();
-  // Guard: never schedule less than 30 seconds
-  return Math.max(diff, 30_000);
 }
 
 function scheduleNext() {
   const windowName = getWindowName();
   if (windowName === 'none') {
-    const delay = msToNextWindowStart();
-    console.log(`[Scheduler] Outside market hours. Next tick in ${(delay / 60000).toFixed(1)} min.`);
+    const delay = getNextForexStartUtc(new Date()).getTime() - Date.now();
+    const safeDelay = Math.max(delay, 30_000);
+    console.log(`[Scheduler] Outside forex hours. Next tick in ${(safeDelay / 60000).toFixed(1)} min.`);
     setTimeout(() => {
       tick().catch(err => console.error('[Scheduler] Tick error:', err)).finally(scheduleNext);
-    }, delay);
+    }, safeDelay);
   } else {
     setTimeout(() => {
       tick().catch(err => console.error('[Scheduler] Tick error:', err)).finally(scheduleNext);
-    }, 60_000);
+    }, 5 * 60_000);
   }
 }
 
-// Maintain open positions outside market windows at a low-rate heartbeat
 async function maintainOpenPositions() {
   try {
     const open = await db.getOpenPositions();
@@ -241,30 +226,19 @@ async function maintainOpenPositions() {
 }
 
 function scheduleHeartbeat() {
-  // Run every 15 minutes; perform work only if windows are closed
   setTimeout(() => {
-    try {
-      const wn = getWindowName();
-      if (wn === 'none') {
-        maintainOpenPositions().catch(err => console.error('[Scheduler] Heartbeat tick error:', err));
-      }
-    } finally {
-      scheduleHeartbeat();
-    }
-  }, 15 * 60_000);
+    maintainOpenPositions().catch(err => console.error('[Scheduler] Heartbeat tick error:', err));
+    scheduleHeartbeat();
+  }, 60_000);
 }
 
 async function main() {
   console.log('[Scheduler] Starting... Enabled:', enabled);
-  // First run immediately
   await tick();
-  // Then schedule dynamically: every minute in-session, otherwise only at next window open
   scheduleNext();
-  // Also start the low-rate heartbeat to enforce exits overnight
   scheduleHeartbeat();
 }
 
-// Basic safety for unhandled errors
 process.on('unhandledRejection', (err) => {
   console.error('[Scheduler] Unhandled rejection:', err);
 });

@@ -195,7 +195,7 @@ export const initDb = async () => {
 export interface SchedulerActivity {
   id?: string;
   last_run_ts: number;
-  window: 'forex' | 'crypto' | 'none';
+  window: 'forex' | 'none';
   ops_found: number;
   trades_placed: number;
   universe_symbols: string[];

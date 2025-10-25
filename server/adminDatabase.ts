@@ -1,5 +1,5 @@
 import { adminDb } from './firebaseAdmin';
-import { Position, PositionStatus, Explanation, LedgerEntry, SchedulerActivity, Signal } from '../types';
+import { Position, PositionStatus } from '../types';
 
 // --- Positions ---
 const positionsCol = adminDb.collection('positions');
@@ -61,3 +61,18 @@ export const getSignals = async (): Promise<Signal[]> => {
   const snap = await signalsCol.get();
   return snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Signal, 'id'>) }));
 };
+
+export async function getClosedPositionsForStrategy(methodName: string, symbol?: string, limit: number = 50): Promise<Position[]> {
+  const positionsCol = adminDb.collection('positions');
+  let q = positionsCol.where('status', '==', PositionStatus.CLOSED).where('method_name', '==', methodName);
+  if (symbol) {
+    q = q.where('symbol', '==', symbol);
+  }
+  const snap = await q.get();
+  const items = snap.docs
+    .map((d: any) => ({ id: d.id, ...(d.data() as Position) }))
+    .filter((p: Position) => p.exit_ts)
+    .sort((a: Position, b: Position) => new Date(b.exit_ts!).getTime() - new Date(a.exit_ts!).getTime())
+    .slice(0, limit);
+  return items;
+}

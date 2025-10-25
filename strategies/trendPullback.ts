@@ -1,44 +1,45 @@
-import { OhlcData, StrategySignal } from '../types';
-import { calculateEMA, calculateATR } from './indicators';
+import { OhlcData, StrategySignal, Side } from '../types';
+import { calculateEMA, calculateATR, calculateADX } from './indicators';
 
 // Trend Pullback Strategy
-// Buy pullback to EMA in uptrend (price > EMA50 > EMA200), sell to EMA in downtrend
-// Confirmation: volume increase or candle pattern
-// Stop: below EMA or ATR-based
-// TP: 2R
+// EMA 9/21 alignment with ADX > 25 gating
+// Stop: 1.5x ATR; TP: 2x ATR
 
-export function evaluateTrendPullback(ohlc: OhlcData[], fastEmaPeriod: number = 50, slowEmaPeriod: number = 200, atrPeriod: number = 14): StrategySignal | null {
+export function evaluateTrendPullback(ohlc: OhlcData[], fastEmaPeriod: number = 9, slowEmaPeriod: number = 21, atrPeriod: number = 14): StrategySignal | null {
   if (ohlc.length < slowEmaPeriod + 1) return null;
 
   const latest = ohlc[ohlc.length - 1];
   const fastEma = calculateEMA(ohlc, fastEmaPeriod);
   const slowEma = calculateEMA(ohlc, slowEmaPeriod);
+  const atr = calculateATR(ohlc, atrPeriod);
+  const adxSeries = calculateADX(ohlc, 14);
+
   const latestFastEMA = fastEma[fastEma.length - 1];
   const latestSlowEMA = slowEma[slowEma.length - 1];
-  const atr = calculateATR(ohlc, atrPeriod);
   const latestATR = atr[atr.length - 1];
+  const latestADX = adxSeries[adxSeries.length - 1];
+
+  if (!Number.isFinite(latestADX) || latestADX <= 25) return null;
 
   const isUptrend = latestFastEMA > latestSlowEMA;
   const isDowntrend = latestFastEMA < latestSlowEMA;
 
-  const pullbackToEMA = Math.abs(latest.close - latestFastEMA) < latestATR * 0.5;
+  const nearFastEMA = Math.abs(latest.close - latestFastEMA) <= latestATR * 0.5;
 
-  if (isUptrend && pullbackToEMA && latest.close > latestFastEMA) {
-    // Buy pullback
+  if (isUptrend && nearFastEMA && latest.close >= latestFastEMA) {
     const entry = latest.close;
-    const stop = latestFastEMA - latestATR;
-    const risk = entry - stop;
-    const tp = entry + 2 * risk;
-    const score = (latestFastEMA - latestSlowEMA) / latestATR; // Trend strength
-    return { signal: 'LONG', entry, stop, tp, score };
-  } else if (isDowntrend && pullbackToEMA && latest.close < latestFastEMA) {
-    // Sell pullback
+    const stop = entry - 1.5 * latestATR;
+    const tp = entry + 2 * latestATR;
+    const score = (latestFastEMA - latestSlowEMA) / (latestATR || 1);
+    return { side: Side.LONG, entry, stop, tp, score, reason: 'Trend pullback long: EMA9>EMA21 with ADX>25' } as any;
+  }
+
+  if (isDowntrend && nearFastEMA && latest.close <= latestFastEMA) {
     const entry = latest.close;
-    const stop = latestFastEMA + latestATR;
-    const risk = stop - entry;
-    const tp = entry - 2 * risk;
-    const score = (latestSlowEMA - latestFastEMA) / latestATR;
-    return { signal: 'SHORT', entry, stop, tp, score };
+    const stop = entry + 1.5 * latestATR;
+    const tp = entry - 2 * latestATR;
+    const score = (latestSlowEMA - latestFastEMA) / (latestATR || 1);
+    return { side: Side.SHORT, entry, stop, tp, score, reason: 'Trend pullback short: EMA9<EMA21 with ADX>25' } as any;
   }
 
   return null;

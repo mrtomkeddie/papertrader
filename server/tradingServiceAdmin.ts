@@ -2,6 +2,7 @@ import * as db from './adminDatabase';
 import { AiTradeAction, Side, Position, PositionStatus, LedgerRefType, Explanation } from '../types';
 import { generateExplanationText, generateFailureAnalysis } from '../services/geminiService';
 import { sendPushNotificationToAll } from './notificationService';
+import { fetchOHLCV } from '../services/dataService';
 
 export const executeAiTrade = async (
   trade: NonNullable<AiTradeAction['trade']>,
@@ -9,6 +10,52 @@ export const executeAiTrade = async (
   riskAmountGbp: number
 ): Promise<{ success: boolean; message: string }> => {
   const now = new Date().toISOString();
+
+  // Enforce single open position at a time
+  const currentlyOpen = await db.getOpenPositions();
+  if (currentlyOpen.length > 0) {
+    return { success: false, message: 'Single-position risk rule: an open position already exists.' };
+  }
+
+  // Volatility clamp using ATR% on suggested timeframe
+  try {
+    const tf = trade.suggested_timeframe && typeof trade.suggested_timeframe === 'string' ? trade.suggested_timeframe : '1h';
+    const ohlcv = await fetchOHLCV(symbol, tf, 60);
+    if (ohlcv.length >= 15) {
+      // Compute ATR(14)
+      const tr: number[] = [];
+      for (let i = 0; i < ohlcv.length; i++) {
+        if (i === 0) {
+          tr.push(ohlcv[i].high - ohlcv[i].low);
+        } else {
+          const tr1 = ohlcv[i].high - ohlcv[i].low;
+          const tr2 = Math.abs(ohlcv[i].high - ohlcv[i-1].close);
+          const tr3 = Math.abs(ohlcv[i].low - ohlcv[i-1].close);
+          tr.push(Math.max(tr1, tr2, tr3));
+        }
+      }
+      const period = 14;
+      let atr: number[] = [];
+      let sum = tr.slice(0, period).reduce((acc, v) => acc + v, 0);
+      atr.push(...Array(period - 1).fill(NaN), sum / period);
+      for (let i = period; i < tr.length; i++) {
+        const current = (atr[i-1] * (period - 1) + tr[i]) / period;
+        atr.push(current);
+      }
+      const latestClose = ohlcv[ohlcv.length - 1].close;
+      const latestAtr = atr[atr.length - 1];
+      const atrPercent = (latestAtr / latestClose) * 100;
+      if (atrPercent < 0.25) {
+        return { success: false, message: `ATR% ${atrPercent.toFixed(2)} < 0.25%; skipping low-volatility trade.` };
+      }
+      if (atrPercent > 1.0) {
+        riskAmountGbp = riskAmountGbp / 2;
+      }
+    }
+  } catch (volErr) {
+    // If ATR fetch fails, proceed without clamp
+    console.warn('[TradingAdmin] ATR clamp failed; proceeding without volatility guard:', volErr);
+  }
 
   const slippageFactor = (trade.slippage_bps + trade.fee_bps) / 10000;
   const entry_price = trade.side === Side.LONG

@@ -125,10 +125,7 @@ const Dashboard: React.FC = () => {
     const hour = date.getUTCHours();
     return day >= 1 && day <= 5 && hour >= 12 && hour < 20;
   };
-  const isCryptoHours = (date: Date) => {
-    const hour = date.getUTCHours();
-    return hour >= 13 && hour < 22;
-  };
+
   const nextForexStart = (date: Date) => {
     const d = new Date(date);
     let day = d.getUTCDay();
@@ -146,28 +143,13 @@ const Dashboard: React.FC = () => {
     }
     return target;
   };
-  const nextCryptoStart = (date: Date) => {
-    const d = new Date(date);
-    const target = new Date(d);
-    target.setUTCMinutes(0,0,0);
-    if (d.getUTCHours() < 13) {
-      target.setUTCHours(13);
-    } else {
-      target.setUTCDate(target.getUTCDate() + 1);
-      target.setUTCHours(13);
-    }
-    return target;
-  };
+
   const forexEndToday = (date: Date) => {
     const t = new Date(date);
     t.setUTCHours(20,0,0,0);
     return t;
   };
-  const cryptoEndToday = (date: Date) => {
-    const t = new Date(date);
-    t.setUTCHours(22,0,0,0);
-    return t;
-  };
+
   
   // Compute session progress percent (0–100)
   const sessionProgressPercent = (startHourUTC: number, endHourUTC: number, date: Date) => {
@@ -238,6 +220,53 @@ const Dashboard: React.FC = () => {
         <DashboardCard title="Total Trades" value={stats.tradeCount} />
       </div>
 
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
+        <h3 className="text-lg font-semibold text-white mb-4">Performance Snapshot</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-300">
+          <div>
+            <p className="text-gray-400">Total P&L</p>
+            <p className={`font-mono ${stats.totalPnl >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{stats.totalPnl.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Win Rate</p>
+            <p className="font-mono">{stats.winRate.toFixed(1)}%</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Average R</p>
+            <p className="font-mono">{stats.avgR.toFixed(2)}R</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Trades</p>
+            <p className="font-mono">{stats.tradeCount}</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Max Drawdown</p>
+            <p className="font-mono">£{stats.maxDrawdown.toFixed(2)}</p>
+          </div>
+        </div>
+        <div className="mt-4 text-sm text-gray-300">
+          <p className="text-gray-400 mb-2">Leaders</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-400">Best Instrument</p>
+              {bestSummaries.bestInstrument ? (
+                <p className="font-mono">{bestSummaries.bestInstrument.symbol} • {bestSummaries.bestInstrument.R.toFixed(2)}R • £{bestSummaries.bestInstrument.pnl.toFixed(2)} • {bestSummaries.bestInstrument.winRate.toFixed(1)}%</p>
+              ) : (
+                <p className="text-gray-500">No closed trades yet.</p>
+              )}
+            </div>
+            <div>
+              <p className="text-gray-400">Best Method</p>
+              {bestSummaries.bestMethod ? (
+                <p className="font-mono">{bestSummaries.bestMethod.method} • {bestSummaries.bestMethod.R.toFixed(2)}R • £{bestSummaries.bestMethod.pnl.toFixed(2)} • {bestSummaries.bestMethod.winRate.toFixed(1)}%</p>
+              ) : (
+                <p className="text-gray-500">No closed trades yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Active Configuration summary */}
       <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Active Configuration</h3>
@@ -273,7 +302,7 @@ const Dashboard: React.FC = () => {
 
       {/* Session Countdown */}
       <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="bg-gray-900/50 p-3 sm:p-4 rounded-lg">
             <h4 className="font-bold text-white mb-2">Forex</h4>
             <p className="text-sm text-gray-400">Optimal: {formatUtcHourToLocal(12)} - {formatUtcHourToLocal(20)} (Mon-Fri)</p>
@@ -287,25 +316,6 @@ const Dashboard: React.FC = () => {
               ) : (
                 <>
                   <p className="text-gray-300 mt-2">Opens in {formatDuration(nextForexStart(now).getTime() - now.getTime())}</p>
-                  <div className="mt-2 h-2 bg-gray-700 rounded">
-                    <div className="h-2 bg-gray-500 rounded" style={{ width: `0%` }} />
-                  </div>
-                </>
-              )}
-          </div>
-          <div className="bg-gray-900/50 p-3 sm:p-4 rounded-lg">
-            <h4 className="font-bold text-white mb-2">Crypto</h4>
-            <p className="text-sm text-gray-400">Optimal: {formatUtcHourToLocal(13)} - {formatUtcHourToLocal(22)} (Daily)</p>
-            {isCryptoHours(now) ? (
-                <>
-                  <p className="text-green-300 mt-2">Open • Closes in {formatDuration(cryptoEndToday(now).getTime() - now.getTime())}</p>
-                  <div className="mt-2 h-2 bg-gray-700 rounded">
-                    <div className="h-2 bg-primary-dark rounded" style={{ width: `${sessionProgressPercent(13,22,now)}%` }} />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-gray-300 mt-2">Opens in {formatDuration(nextCryptoStart(now).getTime() - now.getTime())}</p>
                   <div className="mt-2 h-2 bg-gray-700 rounded">
                     <div className="h-2 bg-gray-500 rounded" style={{ width: `0%` }} />
                   </div>

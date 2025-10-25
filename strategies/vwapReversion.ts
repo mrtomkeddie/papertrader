@@ -1,40 +1,44 @@
-import { OhlcData, StrategySignal } from '../types';
-import { calculateVWAP, calculateEMA, calculateATR } from './indicators';
+import { OhlcData, StrategySignal, Side } from '../types';
+import { calculateVWAP, calculateEMA, calculateATR, calculateRSI } from './indicators';
 
 // VWAP Reversion Strategy
-// Buy if price is below VWAP in uptrend (above EMA), sell if above VWAP in downtrend
-// Stop: recent swing low/high or ATR-based
-// TP: 2R or back to VWAP
+// Enforce 1% deviation from VWAP and RSI gating
+// Stop: ATR-based; Target: VWAP
 
 export function evaluateVWAPReversion(ohlc: OhlcData[], emaPeriod: number = 50, atrPeriod: number = 14): StrategySignal | null {
-  if (ohlc.length < emaPeriod + 1) return null;
+  if (ohlc.length < Math.max(emaPeriod, atrPeriod) + 1) return null;
 
   const latest = ohlc[ohlc.length - 1];
-  const ema = calculateEMA(ohlc, emaPeriod);
-  const latestEMA = ema[ema.length - 1];
-  const vwap = calculateVWAP(ohlc.slice(-50)); // Last 50 candles for VWAP
-  const latestVWAP = vwap[vwap.length - 1];
-  const atr = calculateATR(ohlc, atrPeriod);
-  const latestATR = atr[atr.length - 1];
+  const emaSeries = calculateEMA(ohlc, emaPeriod);
+  const latestEMA = emaSeries[emaSeries.length - 1];
+  const vwapSeries = calculateVWAP(ohlc.slice(-50));
+  const latestVWAP = vwapSeries[vwapSeries.length - 1];
+  const atrSeries = calculateATR(ohlc, atrPeriod);
+  const latestATR = atrSeries[atrSeries.length - 1];
+  const closes = ohlc.map(c => c.close);
+  const rsiSeries = calculateRSI(closes, 14);
+  const latestRSI = rsiSeries[rsiSeries.length - 1];
 
-  const deviation = (latest.close - latestVWAP) / latestATR;
+  if (!Number.isFinite(latestVWAP) || !Number.isFinite(latestATR) || !Number.isFinite(latestEMA) || !Number.isFinite(latestRSI)) return null;
 
-  if (latest.close < latestVWAP && latest.close > latestEMA && Math.abs(deviation) > 1) {
-    // Buy reversion in uptrend
+  const deviationPct = (latest.close - latestVWAP) / latestVWAP;
+
+  // Long: price below VWAP by >=1% and RSI < 35, with price above EMA
+  if (deviationPct <= -0.01 && latestRSI < 35 && latest.close >= latestEMA) {
     const entry = latest.close;
     const stop = entry - latestATR;
-    const risk = entry - stop;
-    const tp = entry + 2 * risk;
-    const score = Math.abs(deviation) * (latest.volume / (ohlc.slice(-10).reduce((acc, c) => acc + c.volume, 0) / 10));
-    return { signal: 'LONG', entry, stop, tp, score };
-  } else if (latest.close > latestVWAP && latest.close < latestEMA && Math.abs(deviation) > 1) {
-    // Sell reversion in downtrend
+    const tp = latestVWAP;
+    const score = Math.abs(deviationPct) * 100;
+    return { side: Side.LONG, entry, stop, tp, score, reason: 'VWAP reversion long: >1% below VWAP with RSI<35' } as any;
+  }
+
+  // Short: price above VWAP by >=1% and RSI > 65, with price below EMA
+  if (deviationPct >= 0.01 && latestRSI > 65 && latest.close <= latestEMA) {
     const entry = latest.close;
     const stop = entry + latestATR;
-    const risk = stop - entry;
-    const tp = entry - 2 * risk;
-    const score = Math.abs(deviation) * (latest.volume / (ohlc.slice(-10).reduce((acc, c) => acc + c.volume, 0) / 10));
-    return { signal: 'SHORT', entry, stop, tp, score };
+    const tp = latestVWAP;
+    const score = Math.abs(deviationPct) * 100;
+    return { side: Side.SHORT, entry, stop, tp, score, reason: 'VWAP reversion short: >1% above VWAP with RSI>65' } as any;
   }
 
   return null;

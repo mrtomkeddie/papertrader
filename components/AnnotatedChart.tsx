@@ -13,34 +13,9 @@ interface AnnotatedChartProps {
   exitTs?: string | null; // ISO
 }
 
-// Map our timeframe string to Binance interval strings
-const mapTimeframeToBinance = (tf?: string): string => {
-  if (!tf) return '1h';
-  const unit = tf.slice(-1).toUpperCase();
-  const value = tf.slice(0, -1);
-  if (unit === 'M') return `${value}m`;
-  if (unit === 'H') return `${value}h`;
-  if (unit === 'D') return `${value}d`;
-  if (unit === 'W') return `${value}w`;
-  return '1h';
-};
 
-// Attempt to guess a Binance symbol from an app symbol
-const guessBinanceSymbol = (s: string): string | null => {
-  // If already looks like Binance, keep as-is
-  if (/USDT$/.test(s)) return s;
-  // Common conversions
-  if (/USD$/.test(s)) return s.replace(/USD$/, 'USDT');
-  if (/USDC$/.test(s)) return s.replace(/USDC$/, 'USDT');
-  // If contains a dash, remove it (BTC-USD -> BTCUSD -> BTCUSDT)
-  if (s.includes('-')) {
-    const compact = s.replace(/-/g, '');
-    if (/USD$/.test(compact)) return compact.replace(/USD$/, 'USDT');
-    if (/USDT$/.test(compact)) return compact;
-  }
-  // Otherwise return null (likely equity/forex)
-  return null;
-};
+
+
 
 const toUtc = (iso: string): UTCTimestamp => Math.floor(new Date(iso).getTime() / 1000) as UTCTimestamp;
 
@@ -62,19 +37,7 @@ const buildSyntheticCandles = (entryIso: string, exitIso: string | null | undefi
   return candles;
 };
 
-const fetchBinanceKlines = async (symbol: string, interval: string, startTimeMs: number, endTimeMs: number): Promise<CandlestickData[]> => {
-  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&startTime=${startTimeMs}&endTime=${endTimeMs}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Binance ${res.status}`);
-  const data: any[] = await res.json();
-  return data.map(k => ({
-    time: Math.floor(k[0] / 1000) as UTCTimestamp,
-    open: Number(k[1]),
-    high: Number(k[2]),
-    low: Number(k[3]),
-    close: Number(k[4]),
-  }));
-};
+
 
 const AnnotatedChart: React.FC<AnnotatedChartProps> = ({
   symbol,
@@ -103,21 +66,10 @@ const AnnotatedChart: React.FC<AnnotatedChartProps> = ({
       upColor: '#22c55e', downColor: '#ef4444', borderUpColor: '#22c55e', borderDownColor: '#ef4444', wickUpColor: '#22c55e', wickDownColor: '#ef4444',
     });
 
-    const binanceSymbol = guessBinanceSymbol(symbol);
-    const interval = mapTimeframeToBinance(timeframe);
-    const startMs = new Date(entryTs).getTime() - 1000 * 60 * 60 * 12; // 12h before
-    const endMs = exitTs ? new Date(exitTs).getTime() + 1000 * 60 * 60 * 12 : new Date(entryTs).getTime() + 1000 * 60 * 60 * 24; // 24h after
-
     (async () => {
-      try {
-        const candles = binanceSymbol
-          ? await fetchBinanceKlines(binanceSymbol, interval, startMs, endMs)
-          : buildSyntheticCandles(entryTs, exitTs, entryPrice);
-        candleSeries.setData(candles);
-      } catch (e) {
-        const candles = buildSyntheticCandles(entryTs, exitTs, entryPrice);
-        candleSeries.setData(candles);
-      }
+      const candles = buildSyntheticCandles(entryTs, exitTs, entryPrice);
+      candleSeries.setData(candles);
+    })();
 
       // Price lines for entry/stop/tp
       candleSeries.createPriceLine({
