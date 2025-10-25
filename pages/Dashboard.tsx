@@ -110,19 +110,12 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
           </div>
--          <div>
--            <p className="text-sm text-gray-400 mb-2">Autopilot</p>
--            <div className="space-y-1 text-sm text-gray-300">
--              <p>Status: <span className={autopilotActive ? 'text-green-300' : 'text-gray-400'}>{autopilotLabel}</span></p>
--              {AUTOPILOT_RISK_GBP ? <p>Risk/trade: £{AUTOPILOT_RISK_GBP}</p> : null}
--            </div>
--          </div>
-+          <div>
-+            <p className="text-sm text-gray-400 mb-2">Trade Risk</p>
-+            <div className="space-y-1 text-sm text-gray-300">
-+              <p>Risk/trade: {AUTOPILOT_RISK_GBP ? `£${AUTOPILOT_RISK_GBP}` : '—'}</p>
-+            </div>
-+          </div>
+          <div>
+            <p className="text-sm text-gray-400 mb-2">Trade Risk</p>
+            <div className="space-y-1 text-sm text-gray-300">
+              <p>Risk/trade: {AUTOPILOT_RISK_GBP ? `£${AUTOPILOT_RISK_GBP}` : '—'}</p>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -115,7 +115,7 @@ const Trades: React.FC = () => {
       <h2 className="text-2xl sm:text-3xl font-bold text-white">All Trades</h2>
 
       {/* Filter bar */}
-      <div className="sm:static sticky top-0 z-10 relative overflow-hidden px-5 sm:px-6 py-4 sm:py-5 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-lg ring-1 ring-white/10">
+      <div className="sm:static sticky top-0 z-10 relative px-5 sm:px-6 py-4 sm:py-5 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-lg ring-1 ring-white/10">
         <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-r from-white/5 via-transparent to-white/5" />
         <div className="relative z-10">
           <h3 className="text-sm font-semibold text-primary-light mb-2">Filters</h3>
@@ -156,7 +156,7 @@ const Trades: React.FC = () => {
              </div>
              <p className="text-sm text-gray-300 mt-3">Current filter: {currentFilterLabel}</p>
              {/* Divider before mobile date inputs */}
-             <div className="sm:hidden h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent mt-3" />
+             <div className="sm:hidden h-px bg-gradient-to-r from-white/10 via-white/5 to-transparent mt-3 mb-2" />
              {/* Mobile date range collapsible */}
              <div className={`${filtersExpanded ? 'grid' : 'hidden'} grid-cols-2 gap-4 mt-4 sm:hidden`}>
                <div className="flex flex-col">
