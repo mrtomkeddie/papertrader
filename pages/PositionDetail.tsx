@@ -84,6 +84,8 @@ const PositionDetail: React.FC = () => {
         </div>
       )}
 
+      </div>
+
       <div className="grid grid-cols-1 gap-6">
         <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-4 sm:gap-y-8">
             <DetailItem label="Side" value={position.side} color={position.side === Side.LONG ? 'text-green-400' : 'text-red-400'} />
