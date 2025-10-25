@@ -1,10 +1,10 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDatabase } from '../hooks/useDatabase';
 import * as db from '../services/database'; // Now uses Firestore-backed functions
 import { Side, PositionStatus, Position, Explanation, Strategy } from '../types';
 import TradingViewWidget from '../components/TradingViewWidget';
-import { generateFailureAnalysis } from '../services/geminiService';
+
 import AnnotatedChart from '../components/AnnotatedChart';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color = 'text-white' }) => (
@@ -32,32 +32,9 @@ const PositionDetail: React.FC = () => {
   }, [position, strategies]);
   
 
-  // Regenerate failure analysis state
-  const [isRegeneratingAnalysis, setIsRegeneratingAnalysis] = useState<boolean>(false);
-  const [regenAnalysisError, setRegenAnalysisError] = useState<string | null>(null);
-  const [regenAnalysisSuccess, setRegenAnalysisSuccess] = useState<boolean>(false);
 
 
-  const handleRegenerateFailureAnalysis = async () => {
-    if (!position || !explanation) {
-      setRegenAnalysisError('Missing position or explanation data. Regenerate the explanation first.');
-      return;
-    }
-    setIsRegeneratingAnalysis(true);
-    setRegenAnalysisError(null);
-    setRegenAnalysisSuccess(false);
-    try {
-      const text = await generateFailureAnalysis(position, explanation);
-      const updated: Explanation = { ...explanation, failure_analysis: text };
-      await db.updateExplanation(updated);
-      setRegenAnalysisSuccess(true);
-    } catch (err: any) {
-      setRegenAnalysisError(err?.message ?? 'Failed to regenerate analysis');
-    } finally {
-      setIsRegeneratingAnalysis(false);
-      setTimeout(() => setRegenAnalysisSuccess(false), 2500);
-    }
-  };
+
 
   if (positionLoading || explanationsLoading || strategiesLoading) {
     return <div className="text-center text-xl text-primary-light">Loading trade details...</div>;
@@ -100,19 +77,10 @@ const PositionDetail: React.FC = () => {
 
       {explanation?.failure_analysis && (
         <div className="bg-red-900/20 border border-red-700/50 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <h3 className="text-base sm:text-xl font-semibold text-red-300">AI Post-Mortem Analysis</h3>
-              <div className="flex w-full sm:w-auto items-center justify-start sm:justify-end gap-2 sm:gap-3">
-                {regenAnalysisSuccess && <span className="text-green-400 text-sm">Updated</span>}
-                {regenAnalysisError && <span className="text-red-400 text-sm">{regenAnalysisError}</span>}
-                <button
-                  className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm rounded bg-red-600 hover:bg-red-500 disabled:opacity-60"
-                  disabled={isRegeneratingAnalysis || !explanation}
-                  onClick={handleRegenerateFailureAnalysis}
-                >{isRegeneratingAnalysis ? 'Regenerating…' : 'Regenerate Analysis'}</button>
-              </div>
-            </div>
-            <p className="text-xs sm:text-base text-red-200/90 leading-relaxed">{explanation.failure_analysis}</p>
+          <div className="mb-3 sm:mb-4">
+            <h3 className="text-base sm:text-xl font-semibold text-red-300">AI Post-Mortem Analysis</h3>
+          </div>
+          <p className="text-xs sm:text-base text-red-200/90 leading-relaxed">{explanation.failure_analysis}</p>
         </div>
       )}
 
