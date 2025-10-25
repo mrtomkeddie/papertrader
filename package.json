@@ -11,7 +11,8 @@
     "reset": "node --env-file=.env.local --import tsx scripts/resetDb.ts",
     "icons": "node --import tsx scripts/generateIcons.ts",
     "push:test": "node --env-file=.env.local --import tsx server/testPush.ts",
-    "push:broadcast": "node --env-file=.env.local --import tsx server/broadcastTest.ts"
+    "push:broadcast": "node --env-file=.env.local --import tsx server/broadcastTest.ts",
+    "backfill:beginner": "node --env-file=.env.local --import tsx server/backfillBeginner.ts"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",
