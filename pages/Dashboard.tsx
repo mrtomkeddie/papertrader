@@ -14,7 +14,7 @@ const Dashboard: React.FC = () => {
 
   // Autopilot flags (Vite env)
   const AUTOPILOT_ENABLED = (import.meta.env.VITE_AUTOPILOT_ENABLED === '1' || import.meta.env.VITE_AUTOPILOT_ENABLED === 'true');
-  const AUTOPILOT_RISK_GBP = Number(import.meta.env.VITE_AUTOPILOT_RISK_GBP ?? '');
+  const AUTOPILOT_RISK_GBP = Number(import.meta.env.VITE_AUTOPILOT_RISK_GBP ?? (import.meta.env as any).AUTOPILOT_RISK_GBP ?? '5');
   const windowName = schedulerActivity?.window ?? 'none';
   const autopilotActive = AUTOPILOT_ENABLED && windowName !== 'none';
   const autopilotLabel = AUTOPILOT_ENABLED ? (windowName !== 'none' ? `Enabled (${windowName})` : 'Disabled') : 'Disabled';
@@ -113,7 +113,7 @@ const Dashboard: React.FC = () => {
           <div>
             <p className="text-sm text-gray-400 mb-2">Trade Risk</p>
             <div className="space-y-1 text-sm text-gray-300">
-              <p>Risk/trade: {AUTOPILOT_RISK_GBP ? `£${AUTOPILOT_RISK_GBP}` : '—'}</p>
+              <p>Risk/trade: £{isNaN(AUTOPILOT_RISK_GBP) ? 5 : AUTOPILOT_RISK_GBP}</p>
             </div>
           </div>
         </div>

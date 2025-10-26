@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
         strictPort: true,
         host: true,
       },
-      envPrefix: ['VITE_', 'FIREBASE_'],
+      envPrefix: ['VITE_', 'FIREBASE_', 'AUTOPILOT_'],
       plugins: [
         react(),
         VitePWA({
