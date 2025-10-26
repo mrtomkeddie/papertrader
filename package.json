@@ -5,14 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "scheduler": "node --env-file=.env.local --import tsx server/scheduler.ts",
-    "reset": "node --env-file=.env.local --import tsx scripts/resetDb.ts",
+    "scheduler": "tsx --env-file=.env.local server/scheduler.ts",
+    "reset:db": "tsx --env-file=.env.local scripts/resetDb.ts",
     "icons": "node --import tsx scripts/generateIcons.ts",
     "push:test": "node --env-file=.env.local --import tsx server/testPush.ts",
     "push:broadcast": "node --env-file=.env.local --import tsx server/broadcastTest.ts",
-    "backfill:beginner": "node --env-file=.env.local --import tsx server/backfillBeginner.ts"
+    "backfill:beginner": "node --env-file=.env.local --import tsx server/backfillBeginner.ts",
+    "seed:demo": "tsx --env-file=.env.local server/seedDemoTrade.ts",
+    "seed:explain": "tsx --env-file=.env.local server/seedDemoExplanation.ts",
+    "cleanup:demo": "tsx --env-file=.env.local server/removeDemoTrade.ts"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",

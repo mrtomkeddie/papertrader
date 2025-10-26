@@ -8,6 +8,10 @@ interface LightweightTradeChartProps {
 }
 
 const toUtc = (iso: string): UTCTimestamp => Math.floor(new Date(iso).getTime() / 1000) as UTCTimestamp;
+const formatDateTime = (iso: string): string => {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : d.toLocaleString();
+};
 
 async function fetchEurusd1h(limit: number = 200): Promise<CandlestickData[]> {
   const apiKey = (import.meta.env.VITE_ALPHA_VANTAGE_API_KEY as string | undefined);
@@ -89,8 +93,17 @@ const LightweightTradeChart: React.FC<LightweightTradeChartProps> = ({ selectedP
       const candles = await fetchEurusd1h(200);
       candlesSeries.setData(candles);
 
-      // Price lines for selected trade stop/tp
+      // Price lines for selected trade entry/stop/tp
       if (selectedPosition) {
+        // Entry line with timestamp in title
+        candlesSeries.createPriceLine({
+          price: selectedPosition.entry_price,
+          color: selectedPosition.side === Side.LONG ? '#22c55e' : '#ef4444',
+          lineStyle: LineStyle.Solid,
+          lineWidth: 2,
+          axisLabelVisible: true,
+          title: `Entry • ${formatDateTime(selectedPosition.entry_ts)}`,
+        });
         candlesSeries.createPriceLine({
           price: selectedPosition.stop_price,
           color: '#ef4444',
@@ -122,7 +135,7 @@ const LightweightTradeChart: React.FC<LightweightTradeChartProps> = ({ selectedP
           position: entryPos,
           shape: p.side === Side.LONG ? 'arrowUp' : 'arrowDown',
           color: entryColor,
-          text: isSelected ? 'Selected Entry' : 'Entry',
+          text: `${isSelected ? 'Selected Entry' : 'Entry'}\n${formatDateTime(p.entry_ts)}`,
         });
         if (p.exit_ts) {
           markers.push({
@@ -130,7 +143,7 @@ const LightweightTradeChart: React.FC<LightweightTradeChartProps> = ({ selectedP
             position: exitPos,
             shape: p.side === Side.LONG ? 'arrowDown' : 'arrowUp',
             color: exitColor,
-            text: isSelected ? 'Selected Exit' : 'Exit',
+            text: `${isSelected ? 'Selected Exit' : 'Exit'}\n${formatDateTime(p.exit_ts)}`,
           });
         }
       });
