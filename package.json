@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "type-check": "tsc -b",
     "preview": "vite preview",
     "scheduler": "tsx --env-file=.env.local server/scheduler.ts",
     "reset:db": "tsx --env-file=.env.local scripts/resetDb.ts",

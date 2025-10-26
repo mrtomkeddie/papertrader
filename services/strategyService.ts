@@ -2,19 +2,10 @@ import { fetchOHLCV } from './dataService';
 import { evaluateORB } from '../strategies/orb';
 import { evaluateVWAPReversion } from '../strategies/vwapReversion';
 import { evaluateTrendPullback } from '../strategies/trendPullback';
-import { Side } from '../types'; // Assuming types are defined here
+import { Side, StrategySignal } from '../types';
 import { calculateADX } from '../strategies/indicators';
 
-export interface StrategySignal {
-  strategy: string;
-  side: Side;
-  entry: number;
-  stop: number;
-  tp: number;
-  score: number;
-  reason: string; // Basic reason from strategy
-  rrr: number;
-}
+// StrategySignal type is now imported from types.ts
 
 export async function getStrategySignals(symbol: string, timeframe: string): Promise<StrategySignal[]> {
   try {
@@ -56,7 +47,7 @@ export async function getStrategySignals(symbol: string, timeframe: string): Pro
         const risk = Math.abs(s.entry - s.stop);
         const reward = s.side === Side.LONG ? s.tp - s.entry : s.entry - s.tp;
         const rrr = reward / risk;
-        return { ...s, rrr };
+        return { ...s, rrr } as StrategySignal;
       })
       .filter((s: any) => s.rrr >= 1.5);
 

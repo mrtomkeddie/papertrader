@@ -29,9 +29,7 @@ const app = initializeApp(firebaseConfig);
 setLogLevel('error');
 export const db = initializeFirestore(app, {
   // Force long polling in dev to avoid aborted channel issues
-  experimentalForceLongPolling: true,
-  // Disable fetch streams to avoid proxies that terminate streaming requests
-  useFetchStreams: false,
+  experimentalForceLongPolling: true
 });
 
 // Guard messaging in environments where it is unsupported to avoid runtime crashes

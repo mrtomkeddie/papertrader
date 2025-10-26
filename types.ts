@@ -95,6 +95,28 @@ export interface TradingViewPayload {
     atr: number;
 }
 
+// Define OHLC data used by indicators and strategies
+export interface OhlcData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+// Strategy signal shape shared across strategies and services
+export interface StrategySignal {
+  side: Side;
+  entry: number;
+  stop: number;
+  tp: number;
+  score: number;
+  reason: string;
+  rrr?: number;
+  strategy?: string;
+}
+
 export interface AiTradeAction {
     action: "TRADE" | "HOLD";
     trade?: {
