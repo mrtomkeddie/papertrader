@@ -3,8 +3,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Register the PWA service worker manually
-registerSW({ immediate: true });
+// Register the PWA service worker only in production
+if (import.meta.env.PROD) {
+  registerSW({ immediate: true });
+}
 
 // Render the app immediately; seed the database asynchronously
 const rootElement = document.getElementById('root');

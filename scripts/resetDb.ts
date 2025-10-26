@@ -1,12 +1,11 @@
-import { db } from '../services/firebase';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { adminDb } from '../server/firebaseAdmin';
 
 async function deleteAll(name: string) {
-  const coll = collection(db, name);
-  const snap = await getDocs(coll);
+  const coll = adminDb.collection(name);
+  const snap = await coll.get();
   let count = 0;
   for (const d of snap.docs) {
-    await deleteDoc(doc(db, name, d.id));
+    await d.ref.delete();
     count++;
   }
   console.log(`Deleted ${count} document(s) from ${name}`);
