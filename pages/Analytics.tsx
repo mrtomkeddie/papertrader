@@ -80,7 +80,7 @@ const Analytics: React.FC = () => {
       <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6">Performance Analytics</h1>
       
       <div className="space-y-8">
-        {Object.entries(metricsByStrategy).map(([strategy, metrics]) => (
+        {(Object.entries(metricsByStrategy) as [string, StrategyMetrics][]).map(([strategy, metrics]) => (
           <div key={strategy} className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-bold text-white mb-4">{strategy} Metrics</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">

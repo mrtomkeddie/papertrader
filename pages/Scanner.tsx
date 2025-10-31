@@ -46,8 +46,8 @@ const Scanner: React.FC = () => {
     let scannedMarketTypes: string[] = [];
 
     if (isForexHours) {
-        marketsToScan.push(...SELECTED_INSTRUMENTS.filter(m => m.category === 'Forex'));
-        scannedMarketTypes.push('Forex');
+        marketsToScan.push(...SELECTED_INSTRUMENTS);
+        scannedMarketTypes.push('Selected');
     }
 
     if (marketsToScan.length === 0) {
@@ -140,11 +140,11 @@ const Scanner: React.FC = () => {
         </div>
         
         <div className="grid grid-cols-1 gap-6">
-          {/* Forex Card */}
+          {/* Trading Window Card */}
           <div className="bg-gray-900/50 p-2 sm:p-4 rounded-lg sm:rounded-xl flex items-center space-x-3 sm:space-x-4">
             <div className="text-primary-light"><GlobeIcon /></div>
             <div>
-              <h4 className="font-bold text.white">Forex Markets</h4>
+              <h4 className="font-bold text.white">Active Markets</h4>
               <p className="text-xl sm:text-2xl font-bold font-mono text-primary-light tracking-wider">
                 {formatUtcHourToLocal(12)} - {formatUtcHourToLocal(20)}
               </p>

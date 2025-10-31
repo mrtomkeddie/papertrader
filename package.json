@@ -16,7 +16,10 @@
     "backfill:beginner": "node --env-file=.env.local --import tsx server/backfillBeginner.ts",
     "seed:demo": "tsx --env-file=.env.local server/seedDemoTrade.ts",
     "seed:explain": "tsx --env-file=.env.local server/seedDemoExplanation.ts",
-    "cleanup:demo": "tsx --env-file=.env.local server/removeDemoTrade.ts"
+    "cleanup:demo": "tsx --env-file=.env.local server/removeDemoTrade.ts",
+    "oanda:test": "node --env-file=.env.local --import tsx server/testOanda.ts",
+    "oanda:testOrder": "node --env-file=.env.local --import tsx server/testOandaOrder.ts",
+    "oanda:testBE": "node --env-file=.env.local --import tsx server/testOandaBreakEven.ts"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",

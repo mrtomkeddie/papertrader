@@ -141,8 +141,15 @@ export const executeAiTrade = async (trade: NonNullable<AiTradeAction['trade']>,
      if (risk_per_share === 0) {
       return { success: false, message: "Risk per share is zero, cannot open position."};
     }
-    const accountGbp = Number(import.meta.env.VITE_AUTOPILOT_ACCOUNT_GBP ?? 250);
+    // Use dynamic account balance: base account + latest ledger cash_after
+    const baseAccountGbp = Number(import.meta.env.VITE_AUTOPILOT_ACCOUNT_GBP ?? 250);
     const riskPct = Number(import.meta.env.VITE_AUTOPILOT_RISK_PCT ?? 0.02);
+    let latestCash = 0;
+    try {
+      const ledger = await db.getLedger();
+      latestCash = ledger.length ? ledger[ledger.length - 1].cash_after : 0;
+    } catch {}
+    const accountGbp = baseAccountGbp + latestCash;
     const stopDistance = Math.abs(entry_price - trade.stop_price);
     let lotSize = (accountGbp * riskPct) / (stopDistance * 100);
     lotSize = Math.max(0.01, lotSize);

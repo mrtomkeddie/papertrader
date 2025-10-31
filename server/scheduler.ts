@@ -3,6 +3,8 @@ dotenv.config({ path: '.env.local' });
 dotenv.config();
 import { SELECTED_INSTRUMENTS, SELECTED_METHODS, TIMEFRAME_BY_SYMBOL } from '../constants';
 import { getStrategySignals } from '../services/strategyService';
+import { fetchOHLCV } from '../services/dataService';
+import { calculateATR } from '../strategies/indicators';
 import { executeAiTrade, runPriceCheckAdmin } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
@@ -106,12 +108,36 @@ async function tick() {
     return;
   }
 
-  const universe = SELECTED_INSTRUMENTS.filter(m => m.category === 'Forex');
+  const universe = SELECTED_INSTRUMENTS;
 
   const ops: Opportunity[] = [];
   for (const m of universe) {
     try {
       const tf = TIMEFRAME_BY_SYMBOL[m.symbol] || '1h';
+
+      // Volatility clamp: skip dead or chaotic sessions (0.2%–1.2%)
+      try {
+        const pre = await fetchOHLCV(m.symbol, tf, 200);
+        if (pre.length >= 20) {
+          const atrSeries = calculateATR(pre, 14);
+          const latestATR = atrSeries[atrSeries.length - 1];
+          const latestClose = pre[pre.length - 1]?.close;
+          if (Number.isFinite(latestATR) && Number.isFinite(latestClose)) {
+            const atrPct = latestATR / latestClose;
+            if (atrPct > 0.012) {
+              msgs.push(`Skipped ${m.symbol}: ATR% ${(atrPct*100).toFixed(2)} > 1.2%`);
+              continue;
+            }
+            if (atrPct < 0.002) {
+              msgs.push(`Skipped ${m.symbol}: ATR% ${(atrPct*100).toFixed(2)} < 0.2%`);
+              continue;
+            }
+          }
+        }
+      } catch (volErr) {
+        console.warn('[Scheduler] Volatility clamp error:', volErr);
+      }
+
       const signals = await getStrategySignals(m.symbol, tf);
       if (signals.length > 0) {
         signals.sort((a, b) => b.rrr - a.rrr);
@@ -137,6 +163,8 @@ async function tick() {
           suggested_timeframe: tf,
         };
         ops.push({ symbol: m.symbol, action: { action: 'TRADE', trade } });
+      } else {
+        msgs.push(`No signals passed filters for ${m.symbol} (min R/R 1.3, clamp)`);
       }
     } catch (e) {
       msgs.push(`Scan error for ${m.symbol}`);

@@ -6,7 +6,7 @@ import { clientsClaim } from 'workbox-core';
 self.skipWaiting();
 
 // Version bump to trigger mobile clients to update SW and caches
-const SW_VERSION = '2025-10-25-01';
+const SW_VERSION = '2025-10-31-01';
 console.log('[sw] version', SW_VERSION);
 
 import { initializeApp } from 'firebase/app';

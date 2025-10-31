@@ -23,22 +23,29 @@ export function evaluateVWAPReversion(ohlc: OhlcData[], emaPeriod: number = 50, 
 
   const deviationPct = (latest.close - latestVWAP) / latestVWAP;
 
+  // Volatility clamp for gold: 0.2%–1.2% ATR percentage
+  const atrPct = latestATR / latest.close;
+  if (atrPct > 0.012 || atrPct < 0.002) return null;
+
+  // Require meaningful deviation from VWAP (gold): 0.35%–0.5%+
+  const minDev = 0.0035;
+
   // Long: price below VWAP by >=1% and RSI < 35, with price above EMA
-  if (deviationPct <= -0.01 && latestRSI < 35 && latest.close >= latestEMA) {
+  if (deviationPct <= -minDev && latestRSI < 35 && latest.close >= latestEMA) {
     const entry = latest.close;
-    const stop = entry - latestATR;
+    const stop = entry - 1.2 * latestATR;
     const tp = latestVWAP;
     const score = Math.abs(deviationPct) * 100;
-    return { side: Side.LONG, entry, stop, tp, score, reason: 'VWAP reversion long: >1% below VWAP with RSI<35' } as any;
+    return { side: Side.LONG, entry, stop, tp, score, reason: 'VWAP reversion long: >0.35% below VWAP with RSI<35', rrr: Math.abs(tp - entry) / Math.abs(entry - stop) } as any;
   }
 
   // Short: price above VWAP by >=1% and RSI > 65, with price below EMA
-  if (deviationPct >= 0.01 && latestRSI > 65 && latest.close <= latestEMA) {
+  if (deviationPct >= minDev && latestRSI > 65 && latest.close <= latestEMA) {
     const entry = latest.close;
-    const stop = entry + latestATR;
+    const stop = entry + 1.2 * latestATR;
     const tp = latestVWAP;
     const score = Math.abs(deviationPct) * 100;
-    return { side: Side.SHORT, entry, stop, tp, score, reason: 'VWAP reversion short: >1% above VWAP with RSI>65' } as any;
+    return { side: Side.SHORT, entry, stop, tp, score, reason: 'VWAP reversion short: >0.35% above VWAP with RSI>65', rrr: Math.abs(tp - entry) / Math.abs(entry - stop) } as any;
   }
 
   return null;

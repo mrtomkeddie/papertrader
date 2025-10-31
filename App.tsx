@@ -4,7 +4,8 @@ import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-do
 import Dashboard from './pages/Dashboard';
 const Trades = React.lazy(() => import('./pages/Trades'));
 const PositionDetail = React.lazy(() => import('./pages/PositionDetail'));
-import { DashboardIcon, ListIcon } from './components/icons/Icons';
+const Settings = React.lazy(() => import('./pages/Settings'));
+import { DashboardIcon, ListIcon, SettingsIcon } from './components/icons/Icons';
 import { auth } from './services/firebase';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { initDb } from './services/database';
@@ -121,6 +122,7 @@ const App: React.FC = () => {
             <nav className="flex flex-col space-y-2">
               <NavItem to="/" icon={<DashboardIcon />} onClick={() => setIsMenuOpen(false)}>Dashboard</NavItem>
               <NavItem to="/trades" icon={<ListIcon />} onClick={() => setIsMenuOpen(false)}>Trades</NavItem>
+              <NavItem to="/settings" icon={<SettingsIcon />} onClick={() => setIsMenuOpen(false)}>Settings</NavItem>
             </nav>
           </aside>
           <header className="fixed top-0 left-0 right-0 h-16 bg-gray-800/80 backdrop-blur-sm flex items-center justify-between px-4 z-30 md:hidden">
@@ -131,12 +133,13 @@ const App: React.FC = () => {
             <div className="w-6" />
           </header>
           <main className="pt-20 md:pt-6 ml-0 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
-            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
+            <ToastContainer aria-label="Notifications" position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
             <Suspense fallback={<div className="text-gray-300">Loading…</div>}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/trades" element={<Trades />} />
                 <Route path="/positions/:id" element={<PositionDetail />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Dashboard />} />
               </Routes>
             </Suspense>

@@ -181,6 +181,25 @@ const Settings: React.FC = () => {
     }
   };
 
+  // Clear trades only: positions, signals, explanations, ledger (keep strategies intact)
+  const handleClearTradesOnly = async () => {
+    if (window.confirm("Delete ALL trades, signals, explanations, and ledger entries? Strategies will be kept.")) {
+      try {
+        const collections = ['signals', 'positions', 'explanations', 'ledger'];
+        for (const colName of collections) {
+          const querySnapshot = await getDocs(collection(firestoreDb, colName));
+          const batch = writeBatch(firestoreDb);
+          querySnapshot.docs.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+        setResponse({ message: 'All trades have been cleared. The app will now reload.', type: 'success' });
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (err) {
+        setResponse({ message: `Failed to clear trades: ${err instanceof Error ? err.message : String(err)}`, type: 'error'});
+      }
+    }
+  };
+
   const handleTestWebhook = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -378,17 +397,23 @@ const Settings: React.FC = () => {
         <div className="flex flex-wrap gap-4">
           <button
             onClick={handleExportData}
-            className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-center leading-tight"
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-center leading-tight"
           >
             Export All Data
           </button>
-          <label className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition cursor-pointer inline-flex items-center text-center leading-tight">
+          <label className="w-full sm:w-auto px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition cursor-pointer inline-flex items-center text-center leading-tight">
             <span>Import Data</span>
             <input type="file" className="hidden" accept=".json" onChange={handleImportData} />
           </label>
           <button
+            onClick={handleClearTradesOnly}
+            className="w-full sm:w-auto px-4 py-3 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition text-center leading-tight"
+          >
+            Clear Trades Only
+          </button>
+          <button
             onClick={handleClearData}
-            className="px-4 py-3 bg-red-700 text-white rounded-md hover:bg-red-800 transition text-center leading-tight"
+            className="w-full sm:w-auto px-4 py-3 bg-red-700 text-white rounded-md hover:bg-red-800 transition text-center leading-tight"
           >
             Clear All Data
           </button>

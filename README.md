@@ -74,3 +74,29 @@ VITE_FIREBASE_APP_ID=...
 - Add backtest harness for the three methods on the two instruments.
 - Enforce risk limits (per-trade GBP risk, daily loss cap, slippage filters).
 - Log metrics per instrument/session (win rate, R, expectancy, drawdown).
+
+## OANDA Demo Trading (Practice)
+
+Enable autopilot trades to route to an OANDA Practice account using env flags:
+
+1. Create `.env.local` entries:
+
+```
+AUTOPILOT_ENABLED=1
+AUTOPILOT_BROKER=oanda
+OANDA_ENV=practice
+OANDA_API_TOKEN=<your-oanda-practice-token>
+OANDA_ACCOUNT_ID=<your-oanda-practice-account-id>
+
+# Optional tuning
+AUTOPILOT_RISK_GBP=5
+AUTOPILOT_ACCOUNT_GBP=250
+AUTOPILOT_RISK_PCT=0.02
+```
+
+2. Start the scheduler via the dev server; when qualifying signals are found, orders are sent as OANDA market orders with `stopLossOnFill` and `takeProfitOnFill` populated. If env flags are missing or an error occurs, the system falls back to simulated fills.
+
+Notes:
+- Symbols are mapped automatically (e.g., `OANDA:XAUUSD` → `XAU_USD`, `FX:EURUSD` → `EUR_USD`).
+- Units use the app’s lot-based sizing; long = positive units, short = negative.
+- Closing via the admin price check will attempt to close the OANDA trade if it was broker-backed.

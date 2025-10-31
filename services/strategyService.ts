@@ -24,20 +24,20 @@ export async function getStrategySignals(symbol: string, timeframe: string): Pro
       if (s) signalsBucket.push({ ...s, strategy: 'ORB' });
     }
 
-    // VWAP Reversion window: 14–17 UTC on 1h data
+    // VWAP Reversion window: 14–17 UTC on instrument timeframe (gold: 15m)
     if (inForex && hour >= 14 && hour < 17) {
-      const ohlcv1h = await fetchOHLCV(symbol, '1h', 150);
-      const s = evaluateVWAPReversion(ohlcv1h);
+      const ohlcvExec = await fetchOHLCV(symbol, timeframe, 150);
+      const s = evaluateVWAPReversion(ohlcvExec);
       if (s) signalsBucket.push({ ...s, strategy: 'VWAP Reversion' });
     }
 
-    // Trend Pullback window: 17–20 UTC on 1h data with ADX > 25 gating
+    // Trend Pullback window: 17–20 UTC on instrument timeframe with ADX > 25 gating
     if (inForex && hour >= 17 && hour < 20) {
-      const ohlcv1h = await fetchOHLCV(symbol, '1h', 150);
-      const adxSeries = calculateADX(ohlcv1h, 14);
+      const ohlcvExec = await fetchOHLCV(symbol, timeframe, 150);
+      const adxSeries = calculateADX(ohlcvExec, 14);
       const latestAdx = adxSeries[adxSeries.length - 1] ?? NaN;
       if (Number.isFinite(latestAdx) && latestAdx > 25) {
-        const s = evaluateTrendPullback(ohlcv1h);
+        const s = evaluateTrendPullback(ohlcvExec);
         if (s) signalsBucket.push({ ...s, strategy: 'Trend Pullback' });
       }
     }
@@ -49,7 +49,7 @@ export async function getStrategySignals(symbol: string, timeframe: string): Pro
         const rrr = reward / risk;
         return { ...s, rrr } as StrategySignal;
       })
-      .filter((s: any) => s.rrr >= 1.5);
+      .filter((s: any) => s.rrr >= 1.3);
 
     return signals;
   } catch (error) {

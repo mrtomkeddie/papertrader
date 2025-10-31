@@ -48,6 +48,16 @@ const Dashboard: React.FC = () => {
     return { totalPnl, winRate, avgR, tradeCount, maxDrawdown, profitFactor };
   }, [positions, ledger, positionsLoading, ledgerLoading]);
 
+  // Dynamic account balance: base account + latest realized cash from ledger
+  const baseAccountGbp = Number(import.meta.env.VITE_AUTOPILOT_ACCOUNT_GBP ?? 250);
+  const latestCashAfter = useMemo(() => {
+    if (ledgerLoading || !ledger || ledger.length === 0) return 0;
+    // ledger loaded ascending by ts in useDatabase initial fetch; safeguard with sort
+    const sorted = [...ledger].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+    return sorted[sorted.length - 1].cash_after || 0;
+  }, [ledger, ledgerLoading]);
+  const accountBalance = useMemo(() => baseAccountGbp + latestCashAfter, [baseAccountGbp, latestCashAfter]);
+
   // Helpers for session countdowns
   const formatUtcHourToLocal = (hour: number) => { const d = new Date(); d.setUTCHours(hour, 0, 0, 0); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); };
   const formatDuration = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = s % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
@@ -111,9 +121,11 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-2">Trade Risk</p>
+            <p className="text-sm text-gray-400 mb-2">Account & Sizing</p>
             <div className="space-y-1 text-sm text-gray-300">
-              <p>Risk/trade: £{isNaN(AUTOPILOT_RISK_GBP) ? 5 : AUTOPILOT_RISK_GBP}</p>
+              <p>Account balance: £{accountBalance.toFixed(2)}</p>
+              <p>Risk % per trade: {(Number(import.meta.env.VITE_AUTOPILOT_RISK_PCT ?? 0.02) * 100).toFixed(1)}%</p>
+              <p>Minimum lot size: 0.01</p>
             </div>
           </div>
         </div>

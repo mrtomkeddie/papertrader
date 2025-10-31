@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { createChart, ColorType, LineStyle, CandlestickData, ISeriesApi, UTCTimestamp } from 'lightweight-charts';
 import { Position, Side } from '../types';
 import { useDatabase } from '../hooks/useDatabase';
+import { fetchOHLCV } from '../services/dataService';
 
 interface LightweightTradeChartProps {
   selectedPosition: Position;
@@ -13,55 +14,28 @@ const formatDateTime = (iso: string): string => {
   return isNaN(d.getTime()) ? '' : d.toLocaleString();
 };
 
-async function fetchEurusd1h(limit: number = 200): Promise<CandlestickData[]> {
-  const apiKey = (import.meta.env.VITE_ALPHA_VANTAGE_API_KEY as string | undefined);
-  if (!apiKey) {
-    // Fallback: synthetic candles centered around current time if API key missing
+async function fetchCandlesForSymbol(symbol: string, limit: number = 200): Promise<CandlestickData[]> {
+  try {
+    const ohlcv = await fetchOHLCV(symbol, '1h', limit);
+    return ohlcv.map(c => ({
+      time: c.time as UTCTimestamp,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
+  } catch (e) {
+    // Fallback: synthetic candles centered around current time
     const now = Math.floor(Date.now() / 1000);
-    const price = 1.10;
+    const base = 1.0;
     const candles: CandlestickData[] = [];
     for (let i = limit - 1; i >= 0; i--) {
       const t = (now - i * 3600) as UTCTimestamp; // 1h steps
-      const base = price + Math.sin(i / 10) * 0.0015;
-      const open = Math.max(0.0001, base + (Math.random() - 0.5) * 0.0006);
-      const close = Math.max(0.0001, base + (Math.random() - 0.5) * 0.0006);
-      const high = Math.max(open, close) + Math.random() * 0.0004;
-      const low = Math.min(open, close) - Math.random() * 0.0004;
-      candles.push({ time: t, open, high, low, close });
-    }
-    return candles;
-  }
-
-  try {
-    const url = `https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=EUR&to_symbol=USD&interval=60min&outputsize=full&apikey=${apiKey}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    const series = data['Time Series FX (60min)'];
-    if (!series || typeof series !== 'object') {
-      throw new Error('Invalid Alpha Vantage response');
-    }
-    const candles: CandlestickData[] = Object.entries(series)
-      .map(([time, values]: [string, any]) => ({
-        time: Math.floor(new Date(time).getTime() / 1000) as UTCTimestamp,
-        open: parseFloat(values['1. open']),
-        high: parseFloat(values['2. high']),
-        low: parseFloat(values['3. low']),
-        close: parseFloat(values['4. close']),
-      }))
-      .sort((a, b) => a.time - b.time);
-    return candles.slice(-limit);
-  } catch (e) {
-    // Fallback to synthetic if rate-limited or failed
-    const now = Math.floor(Date.now() / 1000);
-    const price = 1.10;
-    const candles: CandlestickData[] = [];
-    for (let i = limit - 1; i >= 0; i--) {
-      const t = (now - i * 3600) as UTCTimestamp;
-      const base = price + Math.sin(i / 10) * 0.0015;
-      const open = Math.max(0.0001, base + (Math.random() - 0.5) * 0.0006);
-      const close = Math.max(0.0001, base + (Math.random() - 0.5) * 0.0006);
-      const high = Math.max(open, close) + Math.random() * 0.0004;
-      const low = Math.min(open, close) - Math.random() * 0.0004;
+      const drift = Math.sin(i / 10) * 0.002;
+      const open = Math.max(0.0001, base + drift + (Math.random() - 0.5) * 0.002);
+      const close = Math.max(0.0001, base + drift + (Math.random() - 0.5) * 0.002);
+      const high = Math.max(open, close) + Math.random() * 0.0015;
+      const low = Math.min(open, close) - Math.random() * 0.0015;
       candles.push({ time: t, open, high, low, close });
     }
     return candles;
@@ -90,7 +64,7 @@ const LightweightTradeChart: React.FC<LightweightTradeChartProps> = ({ selectedP
     let ro: ResizeObserver | null = null;
 
     (async () => {
-      const candles = await fetchEurusd1h(200);
+      const candles = await fetchCandlesForSymbol(selectedPosition.symbol, 200);
       candlesSeries.setData(candles);
 
       // Price lines for selected trade entry/stop/tp
@@ -122,9 +96,9 @@ const LightweightTradeChart: React.FC<LightweightTradeChartProps> = ({ selectedP
         });
       }
 
-      // Build markers from all positions (EURUSD only)
+      // Build markers from all positions for the same symbol as selected
       const markers: Parameters<ISeriesApi<'Candlestick'>['setMarkers']>[0] = [];
-      (positions || []).filter(p => p.symbol === 'FX:EURUSD').forEach(p => {
+      (positions || []).filter(p => p.symbol === selectedPosition.symbol).forEach(p => {
         const isSelected = p.id === selectedPosition.id;
         const entryColor = isSelected ? '#fbbf24' : (p.side === Side.LONG ? '#22c55e' : '#ef4444');
         const exitColor = isSelected ? '#93c5fd' : '#93c5fd';

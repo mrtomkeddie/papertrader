@@ -35,10 +35,21 @@ export function evaluateORB(
   const lastAtr = atr[atr.length - 1];
   if (!Number.isFinite(lastAtr) || lastAtr <= 0) return null;
 
+  // Volatility clamp for gold: 0.2%–1.2% ATR percentage
+  const atrPct = lastAtr / latest.close;
+  if (atrPct > 0.012 || atrPct < 0.002) {
+    return null;
+  }
+
   const last10 = ohlc.slice(-10);
   const avgVol = last10.reduce((sum, c) => sum + (c.volume ?? 0), 0) / last10.length;
   const hasVolume = avgVol > 0;
   const volumePass = !hasVolume || latest.volume >= avgVol;
+
+  // Minimum opening range size: >= 0.15% of price
+  const rangeSize = Math.max(0, rangeHigh - rangeLow);
+  const minRange = latest.close * 0.0015; // 0.15%
+  if (rangeSize < minRange) return null;
 
   const breakoutUp = latest.close > rangeHigh && volumePass;
   const breakoutDown = latest.close < rangeLow && volumePass;
@@ -47,8 +58,9 @@ export function evaluateORB(
 
   const side = breakoutUp ? Side.LONG : Side.SHORT;
   const entry = latest.close;
-  const stop = breakoutUp ? rangeLow - lastAtr * 0.2 : rangeHigh + lastAtr * 0.2;
-  const tp = breakoutUp ? entry + lastAtr * 2 : entry - lastAtr * 2;
+  // Stop at the other side of the opening range; TP = 2x range
+  const stop = breakoutUp ? rangeLow : rangeHigh;
+  const tp = breakoutUp ? entry + 2 * rangeSize : entry - 2 * rangeSize;
 
   const score = 0.6 + (volumePass ? 0.2 : 0) + 0.2; // simple heuristic
 
@@ -59,7 +71,7 @@ export function evaluateORB(
     stop,
     tp,
     score,
-    reason: `ORB breakout of 12:00–12:15 opening range (rangeHigh=${rangeHigh.toFixed(5)}, rangeLow=${rangeLow.toFixed(5)})`,
+    reason: `ORB breakout of 12:00–12:15 opening range (range=${rangeSize.toFixed(5)})`,
     rrr: Math.abs(tp - entry) / Math.abs(entry - stop),
   };
 }

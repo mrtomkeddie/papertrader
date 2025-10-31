@@ -70,8 +70,15 @@ export const executeAiTrade = async (
     return { success: false, message: 'Risk per share is zero, cannot open position.' };
   }
   // Lot-based sizing for gold: 0.01 lot minimum (≈1 oz per $1 move)
-  const accountGbp = Number(process.env.AUTOPILOT_ACCOUNT_GBP ?? process.env.VITE_AUTOPILOT_ACCOUNT_GBP ?? '250');
+  const baseAccountGbp = Number(process.env.AUTOPILOT_ACCOUNT_GBP ?? process.env.VITE_AUTOPILOT_ACCOUNT_GBP ?? '250');
   const riskPct = Number(process.env.AUTOPILOT_RISK_PCT ?? process.env.VITE_AUTOPILOT_RISK_PCT ?? '0.02');
+  let latestCash = 0;
+  try {
+    // Read latest ledger balance to reflect realized P/L
+    const lastSnap = await (await import('./firebaseAdmin')).adminDb.collection('ledger').orderBy('ts', 'desc').limit(1).get();
+    latestCash = lastSnap.empty ? 0 : (lastSnap.docs[0].data() as any).cash_after ?? 0;
+  } catch {}
+  const accountGbp = baseAccountGbp + latestCash;
   const stopDistance = Math.abs(entry_price - trade.stop_price);
   let lotSize = (accountGbp * riskPct) / (stopDistance * 100);
   lotSize = Math.max(0.01, lotSize);
