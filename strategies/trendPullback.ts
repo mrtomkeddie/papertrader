@@ -34,7 +34,7 @@ export function evaluateTrendPullback(ohlc: OhlcData[], fastEmaPeriod: number = 
     const stop = entry - 1.8 * latestATR;
     const tp = entry + 2.2 * latestATR;
     const score = (latestFastEMA - latestSlowEMA) / (latestATR || 1);
-    return { side: Side.LONG, entry, stop, tp, score, reason: 'Trend pullback long: EMA9>EMA21, ADX>25, break of pullback high', rrr: Math.abs(tp - entry) / Math.abs(entry - stop) } as any;
+    return { side: Side.LONG, entry, stop, tp, score, reason: 'Trend pullback long: EMA9>EMA21, ADX>25, break of pullback high', rrr: Math.abs(tp - entry) / Math.abs(entry - stop), bar_time: latest.time * 1000 } as any;
   }
 
   if (isDowntrend && nearFastEMA && latest.close <= latestFastEMA && prev && latest.close < prev.low) {
@@ -42,7 +42,7 @@ export function evaluateTrendPullback(ohlc: OhlcData[], fastEmaPeriod: number = 
     const stop = entry + 1.8 * latestATR;
     const tp = entry - 2.2 * latestATR;
     const score = (latestSlowEMA - latestFastEMA) / (latestATR || 1);
-    return { side: Side.SHORT, entry, stop, tp, score, reason: 'Trend pullback short: EMA9<EMA21, ADX>25, break of pullback low', rrr: Math.abs(tp - entry) / Math.abs(entry - stop) } as any;
+    return { side: Side.SHORT, entry, stop, tp, score, reason: 'Trend pullback short: EMA9<EMA21, ADX>25, break of pullback low', rrr: Math.abs(tp - entry) / Math.abs(entry - stop), bar_time: latest.time * 1000 } as any;
   }
 
   return null;

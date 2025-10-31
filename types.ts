@@ -117,6 +117,7 @@ export interface StrategySignal {
   reason: string;
   rrr?: number;
   strategy?: string;
+  bar_time?: number; // ms timestamp of the signal's candle
 }
 
 export interface AiTradeAction {

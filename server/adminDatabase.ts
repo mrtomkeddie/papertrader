@@ -76,3 +76,16 @@ export async function getClosedPositionsForStrategy(methodName: string, symbol?:
     .slice(0, limit);
   return items;
 }
+
+// Count AI-generated positions placed today (UTC), used for daily trade cap
+export const countPositionsPlacedToday = async (): Promise<number> => {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)).toISOString();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+  const snap = await positionsCol
+    .where('strategy_id', '==', 'ai-generated')
+    .where('entry_ts', '>=', start)
+    .where('entry_ts', '<=', end)
+    .get();
+  return snap.docs.length;
+};

@@ -23,8 +23,8 @@ const isForexWindow = () => {
 let lastRunKey = '';
 const alreadyRanThisInterval = () => {
   const now = new Date();
-  const bucket5 = Math.floor(now.getUTCMinutes() / 5);
-  const key = `${now.toDateString()}-${now.getUTCHours()}-${bucket5}`;
+  const bucket2 = Math.floor(now.getUTCMinutes() / 2);
+  const key = `${now.toDateString()}-${now.getUTCHours()}-${bucket2}`;
   if (key === lastRunKey) return true;
   lastRunKey = key;
   return false;
@@ -67,6 +67,7 @@ async function shouldSkipStrategy(strategyName: string, symbol: string): Promise
 async function tick() {
   const windowName = getWindowName();
   const msgs: string[] = [];
+  const minRR = 1.0;
 
   if (!enabled) {
     msgs.push('Scheduler disabled');
@@ -82,7 +83,7 @@ async function tick() {
     return;
   }
   if (windowName === 'none') {
-    msgs.push('Windows closed');
+    msgs.push('skip: window closed');
     console.log('[Scheduler] Windows closed; skipping.');
     await db.updateSchedulerActivity({
       last_run_ts: Date.now(),
@@ -95,8 +96,8 @@ async function tick() {
     return;
   }
   if (alreadyRanThisInterval()) {
-    msgs.push('Already ran this 5-min interval');
-    console.log('[Scheduler] Already ran this 5-min interval; skipping.');
+    msgs.push('Already ran this 2-min interval');
+    console.log('[Scheduler] Already ran this 2-min interval; skipping.');
     await db.updateSchedulerActivity({
       last_run_ts: Date.now(),
       window: windowName,
@@ -111,6 +112,13 @@ async function tick() {
   const universe = SELECTED_INSTRUMENTS;
 
   const ops: Opportunity[] = [];
+  // Daily cap: limit to 2 AI-generated trades per UTC day
+  let placedToday = 0;
+  try {
+    placedToday = await db.countPositionsPlacedToday();
+  } catch (err) {
+    console.warn('[Scheduler] Could not count positions placed today:', err);
+  }
   for (const m of universe) {
     try {
       const tf = TIMEFRAME_BY_SYMBOL[m.symbol] || '1h';
@@ -124,12 +132,15 @@ async function tick() {
           const latestClose = pre[pre.length - 1]?.close;
           if (Number.isFinite(latestATR) && Number.isFinite(latestClose)) {
             const atrPct = latestATR / latestClose;
-            if (atrPct > 0.012) {
-              msgs.push(`Skipped ${m.symbol}: ATR% ${(atrPct*100).toFixed(2)} > 1.2%`);
+            const isGold = /XAU/i.test(m.symbol);
+            const hi = isGold ? 0.014 : 0.012;
+            const lo = isGold ? 0.0015 : 0.002;
+            if (atrPct > hi) {
+              msgs.push(`skip: atr_pct ${(atrPct*100).toFixed(2)} > ${(hi*100).toFixed(1)}% for ${m.symbol}`);
               continue;
             }
-            if (atrPct < 0.002) {
-              msgs.push(`Skipped ${m.symbol}: ATR% ${(atrPct*100).toFixed(2)} < 0.2%`);
+            if (atrPct < lo) {
+              msgs.push(`skip: atr_pct ${(atrPct*100).toFixed(2)} < ${(lo*100).toFixed(2)}% for ${m.symbol}`);
               continue;
             }
           }
@@ -139,14 +150,27 @@ async function tick() {
       }
 
       const signals = await getStrategySignals(m.symbol, tf);
-      if (signals.length > 0) {
-        signals.sort((a, b) => b.rrr - a.rrr);
-        const topSignal = signals[0];
-        if (!SELECTED_METHODS.includes(topSignal.strategy)) continue;
+      const permitted = signals.filter(s => s.strategy && SELECTED_METHODS.includes(s.strategy));
+      permitted.sort((a, b) => (b.rrr ?? 0) - (a.rrr ?? 0));
+      if (permitted.length > 0) {
+        // Concurrency: if multiple signals share the same candle, take the first, log others as skipped
+        const first = permitted[0];
+        const sameBar = permitted.filter(s => s.bar_time && first.bar_time && s.bar_time === first.bar_time);
+        if (sameBar.length > 1) {
+          for (let i = 1; i < sameBar.length; i++) {
+            msgs.push(`second skipped: concurrency (${sameBar[i].strategy}) on same candle for ${m.symbol}`);
+          }
+        }
+        const topSignal = first;
 
         const killReason = await shouldSkipStrategy(topSignal.strategy, m.symbol);
         if (killReason) {
           msgs.push(`Skipped ${m.symbol} ${topSignal.strategy}: ${killReason}`);
+          continue;
+        }
+
+        if (!topSignal.rrr || topSignal.rrr < minRR) {
+          msgs.push(`skip: rr ${topSignal.rrr?.toFixed(2)} < ${minRR.toFixed(1)} for ${m.symbol}`);
           continue;
         }
 
@@ -164,7 +188,36 @@ async function tick() {
         };
         ops.push({ symbol: m.symbol, action: { action: 'TRADE', trade } });
       } else {
-        msgs.push(`No signals passed filters for ${m.symbol} (min R/R 1.3, clamp)`);
+        msgs.push(`No signals passed filters for ${m.symbol}`);
+        // Optional ORB range log: check if opening range is too tight
+        try {
+          const orbOhlcv = await fetchOHLCV(m.symbol, '15m', 30);
+          const now = new Date();
+          const openingIndex = orbOhlcv.findIndex((c) => {
+            const d = new Date(c.time * 1000);
+            return (
+              d.getUTCFullYear() === now.getUTCFullYear() &&
+              d.getUTCMonth() === now.getUTCMonth() &&
+              d.getUTCDate() === now.getUTCDate() &&
+              d.getUTCHours() === 12 &&
+              d.getUTCMinutes() === 0
+            );
+          });
+          if (openingIndex !== -1) {
+            const rangeCandles = orbOhlcv.slice(openingIndex, openingIndex + 1);
+            if (rangeCandles.length) {
+              const latest = orbOhlcv[orbOhlcv.length - 1];
+              const rangeHigh = Math.max(...rangeCandles.map(c => c.high));
+              const rangeLow = Math.min(...rangeCandles.map(c => c.low));
+              const rangeSize = Math.max(0, rangeHigh - rangeLow);
+              const minRange = latest.close * 0.001; // 0.10%
+              if (rangeSize < minRange) {
+                const pct = ((rangeSize / latest.close) * 100).toFixed(3);
+                msgs.push(`skip: range ${pct}% < 0.10% for ${m.symbol}`);
+              }
+            }
+          }
+        } catch {}
       }
     } catch (e) {
       msgs.push(`Scan error for ${m.symbol}`);
@@ -183,6 +236,11 @@ async function tick() {
       const side = trade.side;
       const open = (await db.getOpenPositions()).find(p => p.symbol === op.symbol && p.side === side);
       if (open) { msgs.push(`Duplicate open position on ${op.symbol} (${side})`); continue; }
+      // Enforce daily cap of 2 trades
+      if ((placedToday + placed) >= 2) {
+        msgs.push(`skip: daily cap reached (2 trades)`);
+        continue;
+      }
       const res = await executeAiTrade(trade, op.symbol, riskGbp);
       if (res.success) {
         placed += 1;
@@ -235,7 +293,7 @@ function scheduleNext() {
   } else {
     setTimeout(() => {
       tick().catch(err => console.error('[Scheduler] Tick error:', err)).finally(scheduleNext);
-    }, 5 * 60_000);
+    }, 2 * 60_000);
   }
 }
 

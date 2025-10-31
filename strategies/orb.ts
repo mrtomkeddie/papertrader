@@ -35,9 +35,9 @@ export function evaluateORB(
   const lastAtr = atr[atr.length - 1];
   if (!Number.isFinite(lastAtr) || lastAtr <= 0) return null;
 
-  // Volatility clamp for gold: 0.2%–1.2% ATR percentage
+  // Volatility clamp for gold: 0.15%–1.4% ATR percentage
   const atrPct = lastAtr / latest.close;
-  if (atrPct > 0.012 || atrPct < 0.002) {
+  if (atrPct > 0.014 || atrPct < 0.0015) {
     return null;
   }
 
@@ -46,9 +46,9 @@ export function evaluateORB(
   const hasVolume = avgVol > 0;
   const volumePass = !hasVolume || latest.volume >= avgVol;
 
-  // Minimum opening range size: >= 0.15% of price
+  // Minimum opening range size: >= 0.10% of price
   const rangeSize = Math.max(0, rangeHigh - rangeLow);
-  const minRange = latest.close * 0.0015; // 0.15%
+  const minRange = latest.close * 0.001; // 0.10%
   if (rangeSize < minRange) return null;
 
   const breakoutUp = latest.close > rangeHigh && volumePass;
@@ -73,5 +73,6 @@ export function evaluateORB(
     score,
     reason: `ORB breakout of 12:00–12:15 opening range (range=${rangeSize.toFixed(5)})`,
     rrr: Math.abs(tp - entry) / Math.abs(entry - stop),
+    bar_time: latest.time * 1000,
   };
 }

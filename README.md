@@ -49,11 +49,22 @@ VITE_FIREBASE_APP_ID=...
 
 ## Scanner Behavior
 
-- Scans only selected instruments during optimal hours.
+- Scans selected instruments during optimal hours.
   - Forex: UTC 12–20 (London/NY overlap)
   - Crypto: UTC 13–22 (US peak volume)
-- Uses `geminiService` to request AI trade actions; all qualifying opportunities are shown, and when autopilot is enabled the scheduler executes them without ranking.
+- Scan cadence: every 2 minutes during the open window.
 - Deterministic entries/stops/take-profits live in services and strategies; LLM is UX-only.
+
+### Autopilot Scheduler Rules (current)
+
+- Minimum risk-reward (RR): 1.0 (enforced in scheduler).
+- Volatility clamp (ATR% of price):
+  - Gold (`XAUUSD`): 0.15%–1.4%
+  - Other instruments: 0.2%–1.2%
+- ORB minimum opening range size: 0.10% of price.
+- ORB and Trend Pullback strategies run concurrently across the 12:00–20:00 UTC window.
+- Daily trade cap: 2 AI-generated trades per UTC day.
+- Skip logging: reasons are recorded for window closed, ATR clamp, RR below minimum, too-small opening range, duplicates, and concurrency on the same candle.
 
 ## LLM Architecture
 

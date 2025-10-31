@@ -17,8 +17,8 @@ export async function getStrategySignals(symbol: string, timeframe: string): Pro
 
     const signalsBucket: any[] = [];
 
-    // ORB window: 12:15–14:00 UTC on 15m data
-    if (inForex && ((hour === 12 && minute >= 15) || (hour === 13))) {
+    // ORB: allow during full forex session window (12:00–20:00 UTC) on 15m data
+    if (inForex && hour >= 12 && hour < 20) {
       const orbOhlcv = await fetchOHLCV(symbol, '15m', 120);
       const s = evaluateORB(orbOhlcv);
       if (s) signalsBucket.push({ ...s, strategy: 'ORB' });
@@ -31,8 +31,8 @@ export async function getStrategySignals(symbol: string, timeframe: string): Pro
       if (s) signalsBucket.push({ ...s, strategy: 'VWAP Reversion' });
     }
 
-    // Trend Pullback window: 17–20 UTC on instrument timeframe with ADX > 25 gating
-    if (inForex && hour >= 17 && hour < 20) {
+    // Trend Pullback: allow during full forex session window (12:00–20:00 UTC) with ADX > 25 gating
+    if (inForex && hour >= 12 && hour < 20) {
       const ohlcvExec = await fetchOHLCV(symbol, timeframe, 150);
       const adxSeries = calculateADX(ohlcvExec, 14);
       const latestAdx = adxSeries[adxSeries.length - 1] ?? NaN;
@@ -46,10 +46,9 @@ export async function getStrategySignals(symbol: string, timeframe: string): Pro
       .map((s: any) => {
         const risk = Math.abs(s.entry - s.stop);
         const reward = s.side === Side.LONG ? s.tp - s.entry : s.entry - s.tp;
-        const rrr = reward / risk;
+        const rrr = risk > 0 ? (reward / risk) : 0;
         return { ...s, rrr } as StrategySignal;
-      })
-      .filter((s: any) => s.rrr >= 1.3);
+      });
 
     return signals;
   } catch (error) {
