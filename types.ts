@@ -49,6 +49,8 @@ export interface Position {
   entry_price: number;
   qty: number;
   stop_price: number;
+  initial_stop_price?: number; // preserves original stop for trailing logic
+  stop_change_logs?: { ts: string; old_stop: number; new_stop: number; stage: string }[];
   tp_price: number;
   exit_ts: string | null; // ISO
   exit_price: number | null;
