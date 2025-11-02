@@ -35,9 +35,9 @@ export function evaluateORB(
   const lastAtr = atr[atr.length - 1];
   if (!Number.isFinite(lastAtr) || lastAtr <= 0) return null;
 
-  // Volatility clamp for gold: 0.15%–1.4% ATR percentage
+  // Volatility clamp for gold: 0.15%–1.5% ATR percentage
   const atrPct = lastAtr / latest.close;
-  if (atrPct > 0.014 || atrPct < 0.0015) {
+  if (atrPct > 0.015 || atrPct < 0.0015) {
     return null;
   }
 

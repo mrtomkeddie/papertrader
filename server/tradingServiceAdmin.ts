@@ -10,7 +10,8 @@ import { mapOandaSymbol, placeMarketOrder, closeTrade, getInstrumentMidPrice, up
 export const executeAiTrade = async (
   trade: NonNullable<AiTradeAction['trade']>,
   symbol: string,
-  riskAmountGbp: number
+  riskAmountGbp: number,
+  strategyId?: string
 ): Promise<{ success: boolean; message: string }> => {
   const now = new Date().toISOString();
 
@@ -99,11 +100,11 @@ export const executeAiTrade = async (
     exit_price: null,
     pnl_gbp: null,
     R_multiple: null,
-    strategy_id: 'ai-generated',
+    strategy_id: strategyId || 'ai-generated',
     signal_id: `ai-${crypto.randomUUID()}`,
     slippage_bps: trade.slippage_bps,
     fee_bps: trade.fee_bps,
-    method_name: trade.strategy_type,
+    method_name: strategyId || trade.strategy_type,
   };
 
   // If broker integration is enabled, try real order on OANDA (practice by default)
@@ -130,7 +131,7 @@ export const executeAiTrade = async (
   const addedPosition = await db.addPosition(newPosition);
 
   const strategyForText = {
-    id: 'ai-generated',
+    id: strategyId || 'ai-generated',
     name: trade.strategy_type,
     symbol,
     timeframe: trade.suggested_timeframe || '1H',

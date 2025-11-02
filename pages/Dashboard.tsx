@@ -21,6 +21,9 @@ const Dashboard: React.FC = () => {
 
   const enabledStrategies = useMemo(() => strategies ? strategies.filter(s => s.enabled) : [], [strategies]);
 
+  // Strategy filter
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('all');
+
   // Session countdown state
   const [now, setNow] = useState<Date>(new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
@@ -30,7 +33,8 @@ const Dashboard: React.FC = () => {
     if (positionsLoading || ledgerLoading || !positions || !ledger) {
       return { totalPnl: 0, winRate: 0, avgR: 0, tradeCount: 0, maxDrawdown: 0, profitFactor: 0 };
     }
-    const closed = positions.filter((p): p is Required<Position> => p.status === PositionStatus.CLOSED && p.pnl_gbp != null);
+    const closedAll = positions.filter((p): p is Required<Position> => p.status === PositionStatus.CLOSED && p.pnl_gbp != null);
+    const closed = selectedStrategy === 'all' ? closedAll : closedAll.filter(p => (p.strategy_id ?? '') === selectedStrategy);
     const totalPnl = closed.reduce((acc, p) => acc + p.pnl_gbp, 0);
     const tradeCount = closed.length;
     const winningTrades = closed.filter(p => p.pnl_gbp > 0).length;
@@ -58,6 +62,18 @@ const Dashboard: React.FC = () => {
   }, [ledger, ledgerLoading]);
   const accountBalance = useMemo(() => baseAccountGbp + latestCashAfter, [baseAccountGbp, latestCashAfter]);
 
+  // Recent trades (last 20) filtered by selected strategy
+  const recentTrades = useMemo(() => {
+    if (!positions || positions.length === 0) return [] as Position[];
+    const sorted = [...positions].sort((a, b) => {
+      const ta = new Date(a.entry_ts ?? a.created_ts ?? 0).getTime();
+      const tb = new Date(b.entry_ts ?? b.created_ts ?? 0).getTime();
+      return tb - ta;
+    });
+    const filtered = selectedStrategy === 'all' ? sorted : sorted.filter(p => (p.strategy_id ?? '') === selectedStrategy);
+    return filtered.slice(0, 20);
+  }, [positions, selectedStrategy]);
+
   // Helpers for session countdowns
   const formatUtcHourToLocal = (hour: number) => { const d = new Date(); d.setUTCHours(hour, 0, 0, 0); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); };
   const formatDuration = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = s % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
@@ -73,6 +89,73 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl sm:text-3xl font-bold text-white">Dashboard</h2>
+
+      {/* Strategy Filter & Summary */}
+      <div className="bg-gray-800 p-5 sm:p-6 rounded-lg shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h3 className="text-lg font-semibold text-white">Strategies</h3>
+          <select
+            value={selectedStrategy}
+            onChange={(e) => setSelectedStrategy(e.target.value)}
+            className="bg-gray-700 text-gray-200 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-dark"
+          >
+            <option value="all">All strategies</option>
+            <option value="trendAtr">trendAtr</option>
+            <option value="orb">orb</option>
+            <option value="vwapReversion">vwapReversion</option>
+          </select>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-300">
+          <div>
+            <p className="text-gray-400">Total Trades</p>
+            <p className="font-mono text-xl">{stats.tradeCount}</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Win Rate</p>
+            <p className="font-mono text-xl">{stats.winRate.toFixed(1)}%</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Profit Factor</p>
+            <p className="font-mono text-xl">{stats.profitFactor > 0 ? stats.profitFactor.toFixed(2) : '—'}</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Total P&L</p>
+            <p className={`font-mono text-xl ${stats.totalPnl >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{stats.totalPnl.toFixed(2)}</p>
+          </div>
+        </div>
+        {/* Recent Trades (last 20) */}
+        <div className="mt-6">
+          <h4 className="text-md font-semibold text-white mb-3">Recent Trades</h4>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-gray-300">
+              <thead>
+                <tr className="text-gray-400">
+                  <th className="text-left font-medium px-2 py-1">Time</th>
+                  <th className="text-left font-medium px-2 py-1">Symbol</th>
+                  <th className="text-left font-medium px-2 py-1">Side</th>
+                  <th className="text-left font-medium px-2 py-1">P&L</th>
+                  <th className="text-left font-medium px-2 py-1">R</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentTrades.length === 0 ? (
+                  <tr><td colSpan={5} className="px-2 py-2 text-gray-400">No trades found.</td></tr>
+                ) : (
+                  recentTrades.map((p, idx) => (
+                    <tr key={p.id ?? idx} className="border-t border-gray-700/50">
+                      <td className="px-2 py-1 font-mono">{new Date(p.entry_ts ?? p.created_ts ?? 0).toLocaleString()}</td>
+                      <td className="px-2 py-1 font-mono">{p.symbol}</td>
+                      <td className="px-2 py-1">{p.side}</td>
+                      <td className={`px-2 py-1 font-mono ${Number(p.pnl_gbp ?? 0) >= 0 ? 'text-green-300' : 'text-red-300'}`}>{p.pnl_gbp != null ? `£${Number(p.pnl_gbp).toFixed(2)}` : '—'}</td>
+                      <td className="px-2 py-1 font-mono">{p.R_multiple != null ? Number(p.R_multiple).toFixed(2) : '—'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
       {/* Performance Snapshot */}
       <div className="bg-gray-800 p-5 sm:p-6 rounded-lg shadow-lg">
@@ -154,6 +237,19 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Scheduler Logs / Skip Reasons */}
+      <div className="bg-gray-800 p-5 sm:p-6 rounded-lg shadow-lg">
+        <h3 className="text-lg font-semibold text-white mb-3">Latest Scheduler Logs</h3>
+        <ul className="space-y-1 text-sm text-gray-300">
+          {(schedulerActivity?.messages ?? []).slice(-20).map((m, i) => (
+            <li key={i} className="font-mono">• {m}</li>
+          ))}
+          {(!schedulerActivity?.messages || schedulerActivity.messages.length === 0) && (
+            <li className="text-gray-400">No recent logs.</li>
+          )}
+        </ul>
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config();
-import { SELECTED_INSTRUMENTS, SELECTED_METHODS, TIMEFRAME_BY_SYMBOL } from '../constants';
-import { getStrategySignals } from '../services/strategyService';
+import { TIMEFRAME_BY_SYMBOL } from '../constants';
 import { fetchOHLCV } from '../services/dataService';
-import { calculateATR } from '../strategies/indicators';
+import { trendAtrBot } from '../bots/trendAtr';
+import { orbBot } from '../bots/orb';
+import { vwapBot } from '../bots/vwapReversion';
 import { executeAiTrade, runPriceCheckAdmin } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
@@ -12,6 +13,32 @@ import type { Opportunity } from '../types';
 // Read env flags from either AUTOPILOT_* or VITE_AUTOPILOT_*
 const enabled = (process.env.AUTOPILOT_ENABLED === '1') || (process.env.VITE_AUTOPILOT_ENABLED === '1');
 const riskGbp = Number(process.env.AUTOPILOT_RISK_GBP ?? process.env.VITE_AUTOPILOT_RISK_GBP ?? '5');
+const scanMinutes = Number(process.env.VITE_SCHEDULER_SCAN_MINUTES ?? process.env.AUTOPILOT_SCHEDULER_SCAN_MINUTES ?? '2');
+// Daily cap configuration: if env is missing, don't cap; if provided but invalid, default to 5
+const dailyCapEnv = process.env.VITE_DAILY_TRADE_CAP ?? process.env.AUTOPILOT_DAILY_TRADE_CAP;
+const dailyCap = dailyCapEnv === undefined ? undefined : (Number.isFinite(Number(dailyCapEnv)) ? Number(dailyCapEnv) : 5);
+
+// Per-bot caps via env, fallback to defaults if env missing/invalid
+const parseCap = (v: string | undefined, fallback: number): number => {
+  if (v == null) return fallback;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+const capTrendAtr = parseCap(process.env.VITE_CAP_TRENDATR, 3);
+const capOrb = parseCap(process.env.VITE_CAP_ORB, 3);
+const capVwapReversion = parseCap(process.env.VITE_CAP_VWAPREVERSION, 2);
+
+// Per-bot enable toggles via env: 1|0; if unset, use bot.isEnabled()
+const parseEnable = (v: string | undefined): boolean | undefined => {
+  if (v === '1') return true;
+  if (v === '0') return false;
+  return undefined;
+};
+const envEnableByBot: Record<string, boolean | undefined> = {
+  trendAtr: parseEnable(process.env.VITE_ENABLE_TRENDATR),
+  orb: parseEnable(process.env.VITE_ENABLE_ORB),
+  vwapReversion: parseEnable(process.env.VITE_ENABLE_VWAPREVERSION),
+};
 
 const isForexWindow = () => {
   const now = new Date();
@@ -23,8 +50,9 @@ const isForexWindow = () => {
 let lastRunKey = '';
 const alreadyRanThisInterval = () => {
   const now = new Date();
-  const bucket2 = Math.floor(now.getUTCMinutes() / 2);
-  const key = `${now.toDateString()}-${now.getUTCHours()}-${bucket2}`;
+  const minutes = Math.max(1, scanMinutes);
+  const bucket = Math.floor(now.getUTCMinutes() / minutes);
+  const key = `${now.toDateString()}-${now.getUTCHours()}-${bucket}-${minutes}`;
   if (key === lastRunKey) return true;
   lastRunKey = key;
   return false;
@@ -67,7 +95,7 @@ async function shouldSkipStrategy(strategyName: string, symbol: string): Promise
 async function tick() {
   const windowName = getWindowName();
   const msgs: string[] = [];
-  const minRR = 1.0;
+  const bots = [trendAtrBot, orbBot, vwapBot];
 
   if (!enabled) {
     msgs.push('Scheduler disabled');
@@ -96,132 +124,59 @@ async function tick() {
     return;
   }
   if (alreadyRanThisInterval()) {
-    msgs.push('Already ran this 2-min interval');
-    console.log('[Scheduler] Already ran this 2-min interval; skipping.');
+    msgs.push(`Already ran this ${scanMinutes}-min interval`);
+    console.log(`[Scheduler] Already ran this ${scanMinutes}-min interval; skipping.`);
     await db.updateSchedulerActivity({
       last_run_ts: Date.now(),
       window: windowName,
       ops_found: 0,
       trades_placed: 0,
-      universe_symbols: [],
+      universe_symbols: ['OANDA:XAUUSD'],
       messages: msgs,
     });
     return;
   }
-
-  const universe = SELECTED_INSTRUMENTS;
-
   const ops: Opportunity[] = [];
-  // Daily cap: limit to 2 AI-generated trades per UTC day
+  // Daily cap: configurable via env; per-bot caps optional
   let placedToday = 0;
   try {
     placedToday = await db.countPositionsPlacedToday();
   } catch (err) {
     console.warn('[Scheduler] Could not count positions placed today:', err);
   }
-  for (const m of universe) {
+  // Per-bot caps: unlimited if not defined
+  const botCaps: Record<string, number | undefined> = {
+    trendAtr: capTrendAtr,
+    orb: capOrb,
+    vwapReversion: capVwapReversion,
+  };
+  const placedByBot: Record<string, number> = {};
+  for (const bot of bots) {
     try {
-      const tf = TIMEFRAME_BY_SYMBOL[m.symbol] || '1h';
-
-      // Volatility clamp: skip dead or chaotic sessions (0.2%–1.2%)
-      try {
-        const pre = await fetchOHLCV(m.symbol, tf, 200);
-        if (pre.length >= 20) {
-          const atrSeries = calculateATR(pre, 14);
-          const latestATR = atrSeries[atrSeries.length - 1];
-          const latestClose = pre[pre.length - 1]?.close;
-          if (Number.isFinite(latestATR) && Number.isFinite(latestClose)) {
-            const atrPct = latestATR / latestClose;
-            const isGold = /XAU/i.test(m.symbol);
-            const hi = isGold ? 0.014 : 0.012;
-            const lo = isGold ? 0.0015 : 0.002;
-            if (atrPct > hi) {
-              msgs.push(`skip: atr_pct ${(atrPct*100).toFixed(2)} > ${(hi*100).toFixed(1)}% for ${m.symbol}`);
-              continue;
-            }
-            if (atrPct < lo) {
-              msgs.push(`skip: atr_pct ${(atrPct*100).toFixed(2)} < ${(lo*100).toFixed(2)}% for ${m.symbol}`);
-              continue;
-            }
-          }
-        }
-      } catch (volErr) {
-        console.warn('[Scheduler] Volatility clamp error:', volErr);
+      placedByBot[bot.id] = await db.countPositionsPlacedTodayByStrategy(bot.id);
+    } catch (err) {
+      placedByBot[bot.id] = 0;
+      console.warn(`[Scheduler] Could not count positions placed today for ${bot.id}:`, err);
+    }
+  }
+  for (const bot of bots) {
+    try {
+      // Env-driven enable override: if explicitly disabled, skip
+      const envEnabled = envEnableByBot[bot.id];
+      if (envEnabled === false) { msgs.push(`skip: bot disabled via env [${bot.id}]`); continue; }
+      // If not explicitly enabled/disabled via env, fall back to bot.isEnabled()
+      if (envEnabled === undefined && !bot.isEnabled()) { msgs.push(`bot ${bot.id} disabled`); continue; }
+      const now = new Date();
+      if (!bot.isWindowOpen(now)) { msgs.push(`bot ${bot.id} window closed`); continue; }
+      const signals = await bot.scan();
+      const trades = bot.selectSignals(signals);
+      for (const trade of trades) {
+        ops.push({ symbol: 'OANDA:XAUUSD', action: { action: 'TRADE', trade }, extra: { botId: bot.id } as any });
       }
-
-      const signals = await getStrategySignals(m.symbol, tf);
-      const permitted = signals.filter(s => s.strategy && SELECTED_METHODS.includes(s.strategy));
-      permitted.sort((a, b) => (b.rrr ?? 0) - (a.rrr ?? 0));
-      if (permitted.length > 0) {
-        // Concurrency: if multiple signals share the same candle, take the first, log others as skipped
-        const first = permitted[0];
-        const sameBar = permitted.filter(s => s.bar_time && first.bar_time && s.bar_time === first.bar_time);
-        if (sameBar.length > 1) {
-          for (let i = 1; i < sameBar.length; i++) {
-            msgs.push(`second skipped: concurrency (${sameBar[i].strategy}) on same candle for ${m.symbol}`);
-          }
-        }
-        const topSignal = first;
-
-        const killReason = await shouldSkipStrategy(topSignal.strategy, m.symbol);
-        if (killReason) {
-          msgs.push(`Skipped ${m.symbol} ${topSignal.strategy}: ${killReason}`);
-          continue;
-        }
-
-        if (!topSignal.rrr || topSignal.rrr < minRR) {
-          msgs.push(`skip: rr ${topSignal.rrr?.toFixed(2)} < ${minRR.toFixed(1)} for ${m.symbol}`);
-          continue;
-        }
-
-        const trade = {
-          side: topSignal.side,
-          entry_price: topSignal.entry,
-          stop_price: topSignal.stop,
-          tp_price: topSignal.tp,
-          reason: topSignal.reason,
-          strategy_type: topSignal.strategy,
-          slippage_bps: 5,
-          fee_bps: 10,
-          risk_reward_ratio: topSignal.rrr,
-          suggested_timeframe: tf,
-        };
-        ops.push({ symbol: m.symbol, action: { action: 'TRADE', trade } });
-      } else {
-        msgs.push(`No signals passed filters for ${m.symbol}`);
-        // Optional ORB range log: check if opening range is too tight
-        try {
-          const orbOhlcv = await fetchOHLCV(m.symbol, '15m', 30);
-          const now = new Date();
-          const openingIndex = orbOhlcv.findIndex((c) => {
-            const d = new Date(c.time * 1000);
-            return (
-              d.getUTCFullYear() === now.getUTCFullYear() &&
-              d.getUTCMonth() === now.getUTCMonth() &&
-              d.getUTCDate() === now.getUTCDate() &&
-              d.getUTCHours() === 12 &&
-              d.getUTCMinutes() === 0
-            );
-          });
-          if (openingIndex !== -1) {
-            const rangeCandles = orbOhlcv.slice(openingIndex, openingIndex + 1);
-            if (rangeCandles.length) {
-              const latest = orbOhlcv[orbOhlcv.length - 1];
-              const rangeHigh = Math.max(...rangeCandles.map(c => c.high));
-              const rangeLow = Math.min(...rangeCandles.map(c => c.low));
-              const rangeSize = Math.max(0, rangeHigh - rangeLow);
-              const minRange = latest.close * 0.001; // 0.10%
-              if (rangeSize < minRange) {
-                const pct = ((rangeSize / latest.close) * 100).toFixed(3);
-                msgs.push(`skip: range ${pct}% < 0.10% for ${m.symbol}`);
-              }
-            }
-          }
-        } catch {}
-      }
+      if (trades.length === 0) msgs.push(`bot ${bot.id}: no trades`);
     } catch (e) {
-      msgs.push(`Scan error for ${m.symbol}`);
-      console.warn('[Scheduler] Scan error for', m.symbol, e);
+      msgs.push(`Scan error for bot ${bot.id}`);
+      console.warn('[Scheduler] Scan error for bot', bot.id, e);
     }
   }
 
@@ -236,19 +191,29 @@ async function tick() {
       const side = trade.side;
       const open = (await db.getOpenPositions()).find(p => p.symbol === op.symbol && p.side === side);
       if (open) { msgs.push(`Duplicate open position on ${op.symbol} (${side})`); continue; }
-      // Enforce daily cap of 2 trades
-      if ((placedToday + placed) >= 2) {
-        msgs.push(`skip: daily cap reached (2 trades)`);
+      // Enforce daily cap if configured
+      if (dailyCap !== undefined && (placedToday + placed) >= dailyCap) {
+        msgs.push(`skip: daily cap reached (${dailyCap} trades)`);
         continue;
       }
-      const res = await executeAiTrade(trade, op.symbol, riskGbp);
+      // Enforce per-bot cap if configured
+      const botId = (op as any).extra?.botId as string | undefined;
+      const capForBot = botId ? botCaps[botId] : undefined;
+      if (botId && capForBot !== undefined) {
+        const placedForBot = (placedByBot[botId] ?? 0) + ops.filter(o => (o as any).extra?.botId === botId).length;
+        if (placedForBot >= capForBot) {
+          msgs.push(`skip: ${botId} bot cap reached (${capForBot}/day)`);
+          continue;
+        }
+      }
+      const res = await executeAiTrade(trade, op.symbol, riskGbp, botId);
       if (res.success) {
         placed += 1;
-        msgs.push(`Placed ${side} on ${op.symbol}`);
-        console.log(`[Scheduler] Placed ${side} trade on ${op.symbol}.`);
+        msgs.push(`Placed ${side} on ${op.symbol} [${botId ?? 'unknown'}]`);
+        console.log(`[Scheduler] Placed ${side} trade on ${op.symbol} [${botId ?? 'unknown'}].`);
       } else {
-        msgs.push(`Skipped ${op.symbol}: ${res.message}`);
-        console.log(`[Scheduler] Skipped trade on ${op.symbol}: ${res.message}`);
+        msgs.push(`Skipped ${op.symbol} [${botId ?? 'unknown'}]: ${res.message}`);
+        console.log(`[Scheduler] Skipped trade on ${op.symbol} [${botId ?? 'unknown'}]: ${res.message}`);
       }
     }
   }
@@ -266,7 +231,7 @@ async function tick() {
     window: windowName,
     ops_found: ops.length,
     trades_placed: placed,
-    universe_symbols: universe.map(m => m.symbol),
+    universe_symbols: ['OANDA:XAUUSD'],
     messages: msgs,
   });
 }
@@ -293,7 +258,7 @@ function scheduleNext() {
   } else {
     setTimeout(() => {
       tick().catch(err => console.error('[Scheduler] Tick error:', err)).finally(scheduleNext);
-    }, 2 * 60_000);
+    }, Math.max(1, scanMinutes) * 60_000);
   }
 }
 

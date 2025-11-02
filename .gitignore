@@ -25,3 +25,6 @@ server/*.json
 *.njsproj
 *.sln
 *.sw?
+
+# Windows reserved filename accidentally present; ignore to prevent Git errors
+CON
