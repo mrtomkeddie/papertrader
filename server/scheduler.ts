@@ -189,8 +189,12 @@ async function tick() {
     for (const op of ops) {
       const trade = op.action.trade!;
       const side = trade.side;
-      const open = (await db.getOpenPositions()).find(p => p.symbol === op.symbol && p.side === side);
-      if (open) { msgs.push(`Duplicate open position on ${op.symbol} (${side})`); continue; }
+      // Optional: block duplicate open positions by symbol+side (disabled by default)
+      const blockDup = ((process.env.AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE || process.env.VITE_AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE || 'false') as string).toLowerCase() === 'true';
+      if (blockDup) {
+        const open = (await db.getOpenPositions()).find(p => p.symbol === op.symbol && p.side === side);
+        if (open) { msgs.push(`Duplicate open position on ${op.symbol} (${side})`); continue; }
+      }
       // Enforce daily cap if configured
       if (dailyCap !== undefined && (placedToday + placed) >= dailyCap) {
         msgs.push(`skip: daily cap reached (${dailyCap} trades)`);

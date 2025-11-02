@@ -6,21 +6,22 @@ const Trades = React.lazy(() => import('./pages/Trades'));
 const PositionDetail = React.lazy(() => import('./pages/PositionDetail'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 import { DashboardIcon, ListIcon, SettingsIcon } from './components/icons/Icons';
-import { auth } from './services/firebase';
+import { auth, db } from './services/firebase';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { initDb } from './services/database';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { collection, onSnapshot, QuerySnapshot } from 'firebase/firestore';
-import { db } from './services/database';
 import { toast } from 'react-toastify';
 import { Explanation } from './types';
 import { ListIcon as MenuIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
-  const [isAuthed, setIsAuthed] = useState<boolean>(!!auth.currentUser);
+  const [isAuthed, setIsAuthed] = useState<boolean>(!!auth?.currentUser);
+  const setupMissing = !auth;
   const [authError, setAuthError] = useState<string | null>(null);
   useEffect(() => {
+    if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       setIsAuthed(!!user);
       if (user) {
@@ -31,7 +32,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isAuthed) return;
+    if (!isAuthed || !db) return;
     const explanationsCollection = collection(db, 'explanations');
     let isInitial = true;
     const unsubscribe = onSnapshot(explanationsCollection, (snapshot: QuerySnapshot) => {
@@ -82,7 +83,29 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      {!isAuthed ? (
+      {setupMissing ? (
+        <div className="min-h-screen flex items-center justify-center bg-slate-900 text-gray-200">
+          <div className="bg-gray-800 p-6 rounded-xl shadow-lg max-w-lg">
+            <h2 className="text-xl font-semibold mb-3 text-primary-light">Setup Required</h2>
+            <p className="text-gray-300 mb-4">Firebase is not configured. Add the following keys to <code className="bg-black/30 px-1 py-0.5 rounded">repo/.env.local</code>:</p>
+            <ul className="text-gray-300 text-sm space-y-1 mb-4 list-disc list-inside">
+              <li><code className="bg-black/30 px-1 py-0.5 rounded">VITE_FIREBASE_API_KEY</code></li>
+              <li><code className="bg-black/30 px-1 py-0.5 rounded">VITE_FIREBASE_AUTH_DOMAIN</code></li>
+              <li><code className="bg-black/30 px-1 py-0.5 rounded">VITE_FIREBASE_PROJECT_ID</code></li>
+              <li className="text-gray-400">Optional: <code className="bg-black/30 px-1 py-0.5 rounded">VITE_FIREBASE_STORAGE_BUCKET</code>, <code className="bg-black/30 px-1 py-0.5 rounded">VITE_FIREBASE_MESSAGING_SENDER_ID</code>, <code className="bg-black/30 px-1 py-0.5 rounded">VITE_FIREBASE_APP_ID</code></li>
+            </ul>
+            <div className="bg-black/30 rounded p-3 text-sm text-gray-300">
+              <p className="font-semibold mb-2">Detected (non-sensitive):</p>
+              <ul className="space-y-1">
+                <li>API Key present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY))}</li>
+                <li>Auth Domain present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN))}</li>
+                <li>Project ID present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_PROJECT_ID))}</li>
+              </ul>
+            </div>
+            <p className="text-gray-400 text-sm">After updating, restart the dev server.</p>
+          </div>
+        </div>
+      ) : !isAuthed ? (
         <div className="min-h-screen flex items-center justify-center bg-slate-900 text-gray-200">
           <div className="bg-gray-800 p-6 rounded-xl shadow-lg text-center">
             <h2 className="text-lg sm:text-xl font-semibold mb-3 text-primary-light">Sign in to continue</h2>
@@ -134,15 +157,17 @@ const App: React.FC = () => {
           </header>
           <main className="pt-20 md:pt-6 ml-0 md:ml-64 p-4 md:p-6 h-screen overflow-y-auto">
             <ToastContainer aria-label="Notifications" position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
-            <Suspense fallback={<div className="text-gray-300">Loading…</div>}>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/trades" element={<Trades />} />
-                <Route path="/positions/:id" element={<PositionDetail />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="*" element={<Dashboard />} />
-              </Routes>
-            </Suspense>
+            <div className="page-container">
+              <Suspense fallback={<div className="text-gray-300">Loading…</div>}>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/trades" element={<Trades />} />
+                  <Route path="/positions/:id" element={<PositionDetail />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="*" element={<Dashboard />} />
+                </Routes>
+              </Suspense>
+            </div>
           </main>
         </div>
       )}

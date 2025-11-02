@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, QuerySnapshot, DocumentData, DocumentSnapshot, getDocs } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { db, isFirebaseConfigured } from '../services/firebase';
 
 interface UseCollectionResult<T> {
   data: T[];
@@ -24,6 +24,14 @@ export function useDatabase<T>(collectionName: string, docId?: string): UseColle
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Guard when Firebase is not configured
+    if (!isFirebaseConfigured || !db) {
+      setError('Firebase not configured. Add VITE_FIREBASE_* keys to repo/.env.local.');
+      setLoading(false);
+      setData(docId ? null : ([] as any));
+      return;
+    }
+
     setLoading(true);
     setError(null);
 

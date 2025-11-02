@@ -66,9 +66,9 @@ const Strategies: React.FC = () => {
           For AI-driven trades on the Dashboard, risk is set directly, and the AI determines all other parameters.
       </p>
 
-      <div className="bg-gray-800 p-2 sm:p-6 rounded-lg sm:rounded-xl shadow-lg overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-gray-700">
+      <div className="card-premium p-2 sm:p-6 rounded-lg sm:rounded-xl shadow-lg overflow-x-auto">
+        <table className="min-w-full table-premium">
+          <thead>
             <tr>
               <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
               <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Symbol</th>
@@ -133,7 +133,7 @@ const StrategyModal: React.FC<{ strategy: Strategy | null, onSave: (strategy: St
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
-            <div className="bg-gray-800 rounded-lg sm:rounded-xl shadow-xl p-4 sm:p-8 w-full max-w-md sm:max-w-lg">
+            <div className="card-premium rounded-lg sm:rounded-xl shadow-xl p-4 sm:p-8 w-full max-w-md sm:max-w-lg">
                 <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">{strategy ? 'Edit' : 'Add'} Webhook Profile</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">

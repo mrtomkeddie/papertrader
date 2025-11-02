@@ -12,8 +12,8 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, change, cha
   const changeColor = changeType === 'positive' ? 'text-green-400' : 'text-red-400';
 
   return (
-    <div className="bg-gray-800/80 border border-white/10 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-xl">
-      <h3 className="text-[11px] sm:text-xs font-medium text-gray-400 tracking-wide">{title}</h3>
+    <div className="card-premium p-3 sm:p-6 rounded-lg sm:rounded-xl transition-shadow">
+      <h3 className="text-[11px] sm:text-xs font-medium text-gray-400 tracking-[0.08em] uppercase">{title}</h3>
       <div className="mt-2 sm:mt-3 flex items-baseline">
         <p className="text-xl sm:text-3xl font-semibold text-white">{value}</p>
         {change && (

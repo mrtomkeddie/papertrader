@@ -66,6 +66,20 @@ VITE_FIREBASE_APP_ID=...
 - Daily trade cap: 2 AI-generated trades per UTC day.
 - Skip logging: reasons are recorded for window closed, ATR clamp, RR below minimum, too-small opening range, duplicates, and concurrency on the same candle.
 
+### Concurrency Controls
+
+By default, the app allows multiple open positions so bots can trade whenever they identify valid opportunities. If you prefer stricter risk controls, you can enable the following toggles in `.env.local`:
+
+- `AUTOPILOT_SINGLE_POSITION=true` (or `VITE_AUTOPILOT_SINGLE_POSITION=true`)
+  - Enforces a single open position at a time across the account.
+  - When enabled, new trades are rejected if any position is currently open.
+
+- `AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE=true` (or `VITE_AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE=true`)
+  - Blocks opening a new position that matches an existing open position’s `symbol` and `side`.
+  - This allows multiple positions overall but prevents duplicates on the same instrument and direction.
+
+If these variables are omitted or set to `false`, concurrent trades are allowed.
+
 ## LLM Architecture
 
 - `services/geminiService.ts` implements:

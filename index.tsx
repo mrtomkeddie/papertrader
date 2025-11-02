@@ -14,6 +14,11 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
+// Minimal boot marker to help diagnose blank screen (removed after React mounts)
+try {
+  rootElement.textContent = 'Loading Paper Trader…';
+} catch {}
+
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>

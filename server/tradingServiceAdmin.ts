@@ -15,10 +15,13 @@ export const executeAiTrade = async (
 ): Promise<{ success: boolean; message: string }> => {
   const now = new Date().toISOString();
 
-  // Enforce single open position at a time
-  const currentlyOpen = await db.getOpenPositions();
-  if (currentlyOpen.length > 0) {
-    return { success: false, message: 'Single-position risk rule: an open position already exists.' };
+  // Optional: enforce single open position at a time (disabled by default)
+  const enforceSingle = ((process.env.AUTOPILOT_SINGLE_POSITION || process.env.VITE_AUTOPILOT_SINGLE_POSITION || 'false') as string).toLowerCase() === 'true';
+  if (enforceSingle) {
+    const currentlyOpen = await db.getOpenPositions();
+    if (currentlyOpen.length > 0) {
+      return { success: false, message: 'Single-position risk rule: an open position already exists.' };
+    }
   }
 
   // Volatility clamp using ATR% on suggested timeframe

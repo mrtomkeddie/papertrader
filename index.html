@@ -38,22 +38,7 @@
         }
       }
     </script>
-    <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.26.0",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.4",
-    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
-    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.4.0/"
-  }
-}
-</script>
+    <!-- Removed importmap to rely on Vite dev bundling locally for React and peers -->
     <style>
       body {
         font-feature-settings: 'cv11'; /* More professional-looking numbers */
@@ -75,6 +60,15 @@
 </head>
   <body class="bg-gray-900 text-gray-100 h-full">
     <div id="root" class="h-full"></div>
+    <script>
+      // Inline boot marker to verify HTML is served and JS runs
+      (function(){
+        try {
+          var el = document.getElementById('root');
+          if (el && !el.textContent) el.textContent = 'Booting…';
+        } catch (e) { /* no-op */ }
+      })();
+    </script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

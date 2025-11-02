@@ -115,7 +115,7 @@ const Trades: React.FC = () => {
       <h2 className="text-2xl sm:text-3xl font-bold text-white">All Trades</h2>
 
       {/* Filter bar */}
-      <div className="sm:static sticky top-0 z-10 relative px-5 sm:px-6 py-4 sm:py-5 bg-gray-800/90 backdrop-blur-md rounded-lg shadow-lg ring-1 ring-white/10">
+      <div className="sm:static sticky top-0 z-10 relative px-5 sm:px-6 py-4 sm:py-5 card-premium rounded-lg shadow-lg">
         <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-r from-white/5 via-transparent to-white/5" />
         <div className="relative z-10">
           <h3 className="text-sm font-semibold text-primary-light mb-2">Filters</h3>
@@ -199,9 +199,9 @@ const Trades: React.FC = () => {
       </div>
 
       {/* Desktop: table */}
-      <div className="bg-gray-800 rounded-lg shadow-lg overflow-x-auto hidden md:block">
-        <table className="min-w-full">
-          <thead className="bg-gray-700">
+      <div className="card-premium rounded-lg shadow-lg overflow-x-auto hidden md:block">
+        <table className="min-w-full table-premium">
+          <thead>
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Symbol</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Side</th>

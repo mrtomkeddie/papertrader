@@ -10,44 +10,50 @@ const mapDocToType = <T extends { id?: string }>(doc: any): T => ({
   ...doc.data(),
 } as T);
 
+// Guard access to db at call time to avoid module-load crashes when Firebase isn't configured
+const requireDb = () => {
+  if (!db) throw new Error('Firebase not configured. Add VITE_FIREBASE_* to repo/.env.local.');
+  return db;
+};
+
 // --- Strategies ---
-const strategiesCollection = collection(db, 'strategies');
+const strategiesCollection = () => collection(requireDb(), 'strategies');
 
 export const getStrategies = async (): Promise<Strategy[]> => {
-  const querySnapshot = await getDocs(strategiesCollection);
+  const querySnapshot = await getDocs(strategiesCollection());
   return querySnapshot.docs.map(mapDocToType<Strategy>);
 };
 
 export const addStrategy = async (strategy: Omit<Strategy, 'id'>): Promise<Strategy> => {
-  const docRef = await addDoc(strategiesCollection, strategy);
+  const docRef = await addDoc(strategiesCollection(), strategy);
   return { id: docRef.id, ...strategy };
 };
 
 export const updateStrategy = async (updatedStrategy: Strategy): Promise<void> => {
-  const docRef = doc(db, 'strategies', updatedStrategy.id);
+  const docRef = doc(requireDb(), 'strategies', updatedStrategy.id);
   await updateDoc(docRef, updatedStrategy);
 };
 
 export const deleteStrategy = async (id: string): Promise<void> => {
-  const docRef = doc(db, 'strategies', id);
+  const docRef = doc(requireDb(), 'strategies', id);
   await deleteDoc(docRef);
 };
 
 // --- Signals ---
-const signalsCollection = collection(db, 'signals');
+const signalsCollection = () => collection(requireDb(), 'signals');
 
 export const getSignals = async (): Promise<Signal[]> => {
-  const querySnapshot = await getDocs(signalsCollection);
+  const querySnapshot = await getDocs(signalsCollection());
   return querySnapshot.docs.map(mapDocToType<Signal>);
 };
 
 export const addSignal = async (signal: Omit<Signal, 'id'>): Promise<Signal> => {
-  const docRef = await addDoc(signalsCollection, signal);
+  const docRef = await addDoc(signalsCollection(), signal);
   return { id: docRef.id, ...signal };
 };
 
 export const getLatestSignalForSymbol = async (symbol: string): Promise<Signal | undefined> => {
-  const q = query(signalsCollection, orderBy('bar_time', 'desc'), limit(1));
+  const q = query(signalsCollection(), orderBy('bar_time', 'desc'), limit(1));
   const querySnapshot = await getDocs(q);
   if (!querySnapshot.empty) {
     return mapDocToType<Signal>(querySnapshot.docs[0]);
@@ -57,15 +63,15 @@ export const getLatestSignalForSymbol = async (symbol: string): Promise<Signal |
 
 
 // --- Positions ---
-const positionsCollection = collection(db, 'positions');
+const positionsCollection = () => collection(requireDb(), 'positions');
 
 export const getPositions = async (): Promise<Position[]> => {
-  const querySnapshot = await getDocs(positionsCollection);
+  const querySnapshot = await getDocs(positionsCollection());
   return querySnapshot.docs.map(mapDocToType<Position>);
 };
 
 export const getPositionById = async (id: string): Promise<Position | undefined> => {
-  const docRef = doc(db, 'positions', id);
+  const docRef = doc(requireDb(), 'positions', id);
   const docSnap = await getDoc(docRef); // FIX: Use getDoc for single document
   if (docSnap.exists()) {
     return mapDocToType<Position>(docSnap);
@@ -76,32 +82,32 @@ export const getPositionById = async (id: string): Promise<Position | undefined>
 export const getOpenPositions = async (): Promise<Position[]> => {
   // Firestore queries for status will be needed for large datasets
   // For now, continue to fetch all and filter to leverage useDatabase's real-time capabilities
-  const q = query(positionsCollection, where('status', '==', PositionStatus.OPEN));
+  const q = query(positionsCollection(), where('status', '==', PositionStatus.OPEN));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(mapDocToType<Position>);
 };
 
 export const addPosition = async (position: Omit<Position, 'id'>): Promise<Position> => {
-  const docRef = await addDoc(positionsCollection, position);
+  const docRef = await addDoc(positionsCollection(), position);
   return { id: docRef.id, ...position };
 };
 
 export const updatePosition = async (updatedPosition: Position): Promise<void> => {
-  const docRef = doc(db, 'positions', updatedPosition.id);
+  const docRef = doc(requireDb(), 'positions', updatedPosition.id);
   await updateDoc(docRef, updatedPosition);
 };
 
 // --- Explanations ---
-const explanationsCollection = collection(db, 'explanations');
+const explanationsCollection = () => collection(requireDb(), 'explanations');
 
 export const getExplanations = async (): Promise<Explanation[]> => {
-  const querySnapshot = await getDocs(explanationsCollection);
+  const querySnapshot = await getDocs(explanationsCollection());
   return querySnapshot.docs.map(mapDocToType<Explanation>);
 };
 
 export const getExplanationByPositionId = async (positionId: string): Promise<Explanation | undefined> => {
   // Fix: Query directly by position_id using a 'where' clause
-  const q = query(explanationsCollection, where('position_id', '==', positionId), limit(1));
+  const q = query(explanationsCollection(), where('position_id', '==', positionId), limit(1));
   const querySnapshot = await getDocs(q);
   if (!querySnapshot.empty) {
     return mapDocToType<Explanation>(querySnapshot.docs[0]);
@@ -110,21 +116,21 @@ export const getExplanationByPositionId = async (positionId: string): Promise<Ex
 };
 
 export const addExplanation = async (explanation: Omit<Explanation, 'id'>): Promise<Explanation> => {
-  const docRef = await addDoc(explanationsCollection, explanation);
+  const docRef = await addDoc(explanationsCollection(), explanation);
   return { id: docRef.id, ...explanation };
 };
 
 export const updateExplanation = async (updatedExplanation: Explanation): Promise<void> => {
   // Fix: Assuming ID exists for update, which is now true because Explanation interface has 'id'
-  const docRef = doc(db, 'explanations', updatedExplanation.id);
+  const docRef = doc(requireDb(), 'explanations', updatedExplanation.id);
   await updateDoc(docRef, updatedExplanation);
 };
 
 // --- Ledger ---
-const ledgerCollection = collection(db, 'ledger');
+const ledgerCollection = () => collection(requireDb(), 'ledger');
 
 export const getLedger = async (): Promise<LedgerEntry[]> => {
-  const querySnapshot = await getDocs(query(ledgerCollection, orderBy('ts', 'asc')));
+  const querySnapshot = await getDocs(query(ledgerCollection(), orderBy('ts', 'asc')));
   return querySnapshot.docs.map(mapDocToType<LedgerEntry>);
 };
 
@@ -132,11 +138,11 @@ export const addLedgerEntry = async (entry: Omit<LedgerEntry, 'id'>): Promise<Le
     // Fetch all ledger entries to calculate cash_after.
     // NOTE: For large datasets, this should be optimized with a query for the last entry,
     // or by updating the balance directly in a user document/global state.
-    const ledgerEntries = await getDocs(query(ledgerCollection, orderBy('ts', 'desc'), limit(1)));
+    const ledgerEntries = await getDocs(query(ledgerCollection(), orderBy('ts', 'desc'), limit(1)));
     const lastBalance = ledgerEntries.empty ? 0 : mapDocToType<LedgerEntry>(ledgerEntries.docs[0]).cash_after;
     
     entry.cash_after = lastBalance + entry.delta_gbp;
-    const docRef = await addDoc(ledgerCollection, entry);
+    const docRef = await addDoc(ledgerCollection(), entry);
     return { id: docRef.id, ...entry };
 };
 
@@ -203,7 +209,7 @@ export interface SchedulerActivity {
 }
 
 export const updateSchedulerActivity = async (activity: SchedulerActivity): Promise<void> => {
-  const docRef = doc(db, 'scheduler', 'activity');
+  const docRef = doc(requireDb(), 'scheduler', 'activity');
   await setDoc(docRef, activity, { merge: true });
 };
 

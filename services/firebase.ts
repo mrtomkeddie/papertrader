@@ -4,51 +4,67 @@ import { initializeFirestore, setLogLevel } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getMessaging } from 'firebase/messaging';
 
-// Support both Vite (import.meta.env) and Node (process.env)
-const viteEnv: any = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : {};
+// Read env directly from Vite at build/runtime
 
 const firebaseConfig = {
-  apiKey: viteEnv.VITE_FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
-  authDomain: viteEnv.VITE_FIREBASE_AUTH_DOMAIN || process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: viteEnv.VITE_FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
-  storageBucket: viteEnv.VITE_FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: viteEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: viteEnv.VITE_FIREBASE_APP_ID || process.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID,
+  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY,
+  authDomain: (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: (import.meta as any).env?.VITE_FIREBASE_APP_ID,
 };
-
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.authDomain) {
-  console.error(
-    "🔥 Firebase Configuration Error: Missing required env vars. Please set VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, and VITE_FIREBASE_PROJECT_ID in .env.local or provide FIREBASE_* equivalents for server-side."
-  );
-  throw new Error("Firebase not configured properly. Check your .env.local.");
-}
-
-const app = initializeApp(firebaseConfig);
-
-// Reduce noisy Firestore logs in dev and avoid network transport issues
-setLogLevel('error');
-export const db = initializeFirestore(app, {
-  // Force long polling in dev to avoid aborted channel issues
-  experimentalForceLongPolling: true
-});
-
-// Guard messaging in environments where it is unsupported to avoid runtime crashes
-let messagingInstance: any = null;
+// Debug: log presence of required keys (not values) to aid setup verification
 try {
-  messagingInstance = getMessaging(app);
-} catch (e) {
-  console.warn('[firebase] Messaging initialization skipped (unsupported environment):', e instanceof Error ? e.message : String(e));
-}
-export const messaging = messagingInstance;
+  const flags = {
+    hasApiKey: Boolean(firebaseConfig.apiKey),
+    hasAuthDomain: Boolean(firebaseConfig.authDomain),
+    hasProjectId: Boolean(firebaseConfig.projectId),
+  };
+  console.log('[firebase] Env presence:', flags);
+} catch {}
+export const isFirebaseConfigured = Boolean(
+  firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDomain
+);
 
-export const auth = getAuth(app);
+let app: any = null;
+let dbInstance: any = null;
+let messagingInstance: any = null;
+let authInstance: any = null;
+
+try {
+  app = initializeApp(firebaseConfig);
+  setLogLevel('error');
+  dbInstance = initializeFirestore(app, { experimentalForceLongPolling: true });
+  try {
+    messagingInstance = getMessaging(app);
+  } catch (e) {
+    console.warn('[firebase] Messaging initialization skipped (unsupported environment):', e instanceof Error ? e.message : String(e));
+  }
+  authInstance = getAuth(app);
+  onAuthStateChanged(authInstance, (user) => {
+    if (user) {
+      console.log('[auth] User:', { uid: user.uid, isAnonymous: user.isAnonymous, providerData: user.providerData?.map(p => p.providerId) });
+    } else {
+      console.log('[auth] No user');
+    }
+  });
+  console.log("Firebase initialized with project:", firebaseConfig.projectId);
+} catch (e) {
+  console.error('🔥 Firebase init failed:', e instanceof Error ? e.message : String(e));
+}
+
+export const db = dbInstance;
+export const messaging = messagingInstance;
+export const auth = authInstance;
 
 // Anonymous login removed; app gates UI until Google sign-in.
 
 export const signInWithGoogle = async (): Promise<void> => {
+  if (!authInstance) throw new Error('Firebase not configured. Cannot sign in.');
   const provider = new GoogleAuthProvider();
   try {
-    await signInWithPopup(auth, provider);
+    await signInWithPopup(authInstance, provider);
     console.log('[auth] Signed in with Google');
   } catch (e) {
     console.error('[auth] Google sign-in failed:', e instanceof Error ? e.message : String(e));
@@ -56,26 +72,12 @@ export const signInWithGoogle = async (): Promise<void> => {
 };
 
 export const signOutUser = async (): Promise<void> => {
+  if (!authInstance) return;
   try {
-    await signOut(auth);
+    await signOut(authInstance);
     console.log('[auth] Signed out');
     // No anonymous fallback in Google-only mode; App will show login gate.
   } catch (e) {
     console.error('[auth] Sign out failed:', e instanceof Error ? e.message : String(e));
   }
 };
-
-// Optional: log auth state changes for debugging
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log('[auth] User:', {
-      uid: user.uid,
-      isAnonymous: user.isAnonymous,
-      providerData: user.providerData?.map(p => p.providerId),
-    });
-  } else {
-    console.log('[auth] No user');
-  }
-});
-
-console.log("Firebase initialized with project:", firebaseConfig.projectId);

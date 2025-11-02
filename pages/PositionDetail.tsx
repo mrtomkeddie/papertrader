@@ -60,7 +60,7 @@ const PositionDetail: React.FC = () => {
         </span>
       </div>
 
-      <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+      <div className="card-premium p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
           <h3 className="text-base sm:text-xl font-semibold text-primary-light">Trade Explanation</h3>
         </div>
@@ -85,7 +85,7 @@ const PositionDetail: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <div className="bg-gray-800 p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-4 sm:gap-y-8">
+        <div className="card-premium p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-4 sm:gap-y-8">
             <DetailItem label="Side" value={position.side} color={position.side === Side.LONG ? 'text-green-400' : 'text-red-400'} />
             <DetailItem label="Quantity" value={position.qty.toFixed(6)} />
             <DetailItem label="P&L" value={position.pnl_gbp !== null ? `£${position.pnl_gbp.toFixed(2)}` : 'N/A'} color={pnlColor}/>
@@ -107,7 +107,7 @@ const PositionDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-gray-800 rounded-lg sm:rounded-xl shadow-lg h-[320px] sm:h-[420px] lg:h-[500px]">
+      <div className="card-premium rounded-lg sm:rounded-xl shadow-lg h-[320px] sm:h-[420px] lg:h-[500px]">
         <LightweightTradeChart selectedPosition={position} />
       </div>
     </div>
