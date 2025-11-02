@@ -12,9 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Ignore service account and other JSON secrets
-server/*.json
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -25,6 +22,3 @@ server/*.json
 *.njsproj
 *.sln
 *.sw?
-
-# Windows reserved filename accidentally present; ignore to prevent Git errors
-CON

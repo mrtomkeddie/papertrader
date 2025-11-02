@@ -4,46 +4,28 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "type-check": "tsc -b",
-    "preview": "vite preview",
-    "scheduler": "tsx --env-file=.env.local server/scheduler.ts",
-    "reset:db": "tsx --env-file=.env.local scripts/resetDb.ts",
-    "icons": "node --import tsx scripts/generateIcons.ts",
-    "push:test": "node --env-file=.env.local --import tsx server/testPush.ts",
-    "push:broadcast": "node --env-file=.env.local --import tsx server/broadcastTest.ts",
-    "backfill:beginner": "node --env-file=.env.local --import tsx server/backfillBeginner.ts",
-    "seed:demo": "tsx --env-file=.env.local server/seedDemoTrade.ts",
-    "seed:explain": "tsx --env-file=.env.local server/seedDemoExplanation.ts",
-    "cleanup:demo": "tsx --env-file=.env.local server/removeDemoTrade.ts",
-    "oanda:test": "node --env-file=.env.local --import tsx server/testOanda.ts",
-    "oanda:testOrder": "node --env-file=.env.local --import tsx server/testOandaOrder.ts",
-    "oanda:testBE": "node --env-file=.env.local --import tsx server/testOandaBreakEven.ts"
+    "dev": "npm --prefix repo run dev",
+    "build": "npm --prefix repo run build",
+    "preview": "npm --prefix repo run preview",
+    "scheduler": "npm --prefix repo run scheduler",
+    "reset": "npm --prefix repo run reset"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",
-    "@types/express": "^5.0.4",
-    "express": "^5.1.0",
     "firebase": "^12.4.0",
-    "firebase-admin": "^12.6.0",
-    "lightweight-charts": "^4.2.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.4",
-    "react-toastify": "^11.0.5",
-    "recharts": "^3.3.0"
+    "recharts": "^3.3.0",
+    "yahoo-finance2": "^3.10.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.0.1",
     "dotenv": "^16.4.5",
-    "jimp": "^1.6.0",
-    "sharp": "^0.34.4",
     "tsx": "^4.19.2",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0",
-    "vite-plugin-pwa": "^1.1.0"
+    "vite": "^6.2.0"
   }
 }

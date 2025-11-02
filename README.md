@@ -4,8 +4,6 @@
 
 # Paper Trader
 
-Note: This repository is the single app. The previous root app has been removed; use this repo for all commands, UI, and the scheduler.
-
 Run this app locally and scan a narrow set of liquid markets using deterministic strategy rules, while a lightweight LLM provides summaries and failure explanations.
 
 View your app in AI Studio: https://ai.studio/apps/drive/12Ze_JeS3qVf6P5v0sZZ0eh-0AZ73ZOwB
@@ -40,7 +38,7 @@ VITE_FIREBASE_APP_ID=...
 
 ## Selections (for profit focus)
 
-- Instruments: `BINANCE:BTCUSDT`, `BINANCE:ETHUSDT`, `FX:EURUSD`, `FX:GBPUSD`
+- Instruments: `BINANCE:BTCUSDT`, `FX:EURUSD`
 - Methods: `Opening-Range Breakout (ORB)`, `Trend Pullback / Break-and-Retest`, `VWAP Reversion`
 - Rationale:
   - ORB captures session impulse moves (London/NY overlap; US peak crypto).
@@ -49,36 +47,11 @@ VITE_FIREBASE_APP_ID=...
 
 ## Scanner Behavior
 
-- Scans selected instruments during optimal hours.
+- Scans only selected instruments during optimal hours.
   - Forex: UTC 12–20 (London/NY overlap)
   - Crypto: UTC 13–22 (US peak volume)
-- Scan cadence: every 2 minutes during the open window.
+- Uses `geminiService` to request AI trade actions; all qualifying opportunities are shown, and when autopilot is enabled the scheduler executes them without ranking.
 - Deterministic entries/stops/take-profits live in services and strategies; LLM is UX-only.
-
-### Autopilot Scheduler Rules (current)
-
-- Minimum risk-reward (RR): 1.0 (enforced in scheduler).
-- Volatility clamp (ATR% of price):
-  - Gold (`XAUUSD`): 0.15%–1.4%
-  - Other instruments: 0.2%–1.2%
-- ORB minimum opening range size: 0.10% of price.
-- ORB and Trend Pullback strategies run concurrently across the 12:00–20:00 UTC window.
-- Daily trade cap: 2 AI-generated trades per UTC day.
-- Skip logging: reasons are recorded for window closed, ATR clamp, RR below minimum, too-small opening range, duplicates, and concurrency on the same candle.
-
-### Concurrency Controls
-
-By default, the app allows multiple open positions so bots can trade whenever they identify valid opportunities. If you prefer stricter risk controls, you can enable the following toggles in `.env.local`:
-
-- `AUTOPILOT_SINGLE_POSITION=true` (or `VITE_AUTOPILOT_SINGLE_POSITION=true`)
-  - Enforces a single open position at a time across the account.
-  - When enabled, new trades are rejected if any position is currently open.
-
-- `AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE=true` (or `VITE_AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE=true`)
-  - Blocks opening a new position that matches an existing open position’s `symbol` and `side`.
-  - This allows multiple positions overall but prevents duplicates on the same instrument and direction.
-
-If these variables are omitted or set to `false`, concurrent trades are allowed.
 
 ## LLM Architecture
 
@@ -99,29 +72,3 @@ If these variables are omitted or set to `false`, concurrent trades are allowed.
 - Add backtest harness for the three methods on the two instruments.
 - Enforce risk limits (per-trade GBP risk, daily loss cap, slippage filters).
 - Log metrics per instrument/session (win rate, R, expectancy, drawdown).
-
-## OANDA Demo Trading (Practice)
-
-Enable autopilot trades to route to an OANDA Practice account using env flags:
-
-1. Create `.env.local` entries:
-
-```
-AUTOPILOT_ENABLED=1
-AUTOPILOT_BROKER=oanda
-OANDA_ENV=practice
-OANDA_API_TOKEN=<your-oanda-practice-token>
-OANDA_ACCOUNT_ID=<your-oanda-practice-account-id>
-
-# Optional tuning
-AUTOPILOT_RISK_GBP=5
-AUTOPILOT_ACCOUNT_GBP=250
-AUTOPILOT_RISK_PCT=0.02
-```
-
-2. Start the scheduler via the dev server; when qualifying signals are found, orders are sent as OANDA market orders with `stopLossOnFill` and `takeProfitOnFill` populated. If env flags are missing or an error occurs, the system falls back to simulated fills.
-
-Notes:
-- Symbols are mapped automatically (e.g., `OANDA:XAUUSD` → `XAU_USD`, `FX:EURUSD` → `EUR_USD`).
-- Units use the app’s lot-based sizing; long = positive units, short = negative.
-- Closing via the admin price check will attempt to close the OANDA trade if it was broker-backed.
