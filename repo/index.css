@@ -211,6 +211,40 @@ body {
 .segmented.compact .segmented-item { padding: 6px 8px; font-weight: 600; font-size: 12px; }
 }
 
+/* Pill-shaped dropdown (select) */
+.pill-dropdown { position: relative; display: inline-block; }
+.pill-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: rgba(24,24,24,0.9);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 28px 8px 12px; /* extra right space for caret */
+  min-width: 140px;
+}
+.pill-select:hover { background: rgba(28,28,28,0.9); }
+.pill-select:focus { outline: none; box-shadow: 0 0 0 1px rgba(255,255,255,0.16) inset; }
+.pill-dropdown::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--text-secondary);
+  border-bottom: 2px solid var(--text-secondary);
+  pointer-events: none;
+}
+.pill-select.compact { padding: 6px 24px 6px 10px; font-size: 12px; min-width: 120px; }
+
+/* Scoped smaller headers for Recent Trades table */
+.recent-trades-table th { font-size: 0.875rem; letter-spacing: 0.02em; font-weight: 600; }
+.recent-trades-table th, .recent-trades-table td { padding: 0.5rem 0.75rem; }
+
 /* Animated fade-in */
 @keyframes fadeInCard { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 .fade-in { animation: fadeInCard 300ms ease-out; }

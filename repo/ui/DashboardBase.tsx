@@ -232,30 +232,34 @@ export default function DashboardBase({ title, strategyFilter }: {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-white">Recent Trades</h3>
             <div className="flex items-center gap-4">
-              {(() => {
-                const instIndex = instrumentFilter === 'all' ? 0 : instrumentFilter === 'gold' ? 1 : 2;
-                return (
-                  <div className="segmented compact" style={{ ['--index' as any]: instIndex }} role="tablist" aria-label="Instrument filter">
-                    <button className="segmented-item" data-active={instrumentFilter === 'all' ? 'true' : 'false'} onClick={() => setInstrumentFilter('all')}>All</button>
-                    <button className="segmented-item" data-active={instrumentFilter === 'gold' ? 'true' : 'false'} onClick={() => setInstrumentFilter('gold')}>Gold</button>
-                    <button className="segmented-item" data-active={instrumentFilter === 'nas100' ? 'true' : 'false'} onClick={() => setInstrumentFilter('nas100')}>NAS100</button>
-                  </div>
-                );
-              })()}
-              {(() => {
-                const tableRangeIndex = tableRange === 'today' ? 0 : tableRange === 'week' ? 1 : 2;
-                return (
-                  <div className="segmented compact" style={{ ['--index' as any]: tableRangeIndex }} role="tablist" aria-label="Time range">
-                    <button className="segmented-item" data-active={tableRange === 'today' ? 'true' : 'false'} onClick={() => setTableRange('today')}>Today</button>
-                    <button className="segmented-item" data-active={tableRange === 'week' ? 'true' : 'false'} onClick={() => setTableRange('week')}>This Week</button>
-                    <button className="segmented-item" data-active={tableRange === 'all' ? 'true' : 'false'} onClick={() => setTableRange('all')}>All Time</button>
-                  </div>
-                );
-              })()}
+              <div className="pill-dropdown">
+                <select
+                  aria-label="Instrument filter"
+                  className="pill-select compact"
+                  value={instrumentFilter}
+                  onChange={e => setInstrumentFilter(e.target.value as 'all' | 'gold' | 'nas100')}
+                >
+                  <option value="all">All</option>
+                  <option value="gold">Gold</option>
+                  <option value="nas100">NAS100</option>
+                </select>
+              </div>
+              <div className="pill-dropdown">
+                <select
+                  aria-label="Time range"
+                  className="pill-select compact"
+                  value={tableRange}
+                  onChange={e => setTableRange(e.target.value as TimeRange)}
+                >
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full table-premium">
+            <table className="min-w-full table-premium recent-trades-table">
               <thead>
                 <tr>
                   <th className="text-left">Date</th>
