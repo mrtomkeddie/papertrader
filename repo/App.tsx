@@ -170,16 +170,18 @@ const App: React.FC = () => {
             <ToastContainer aria-label="Notifications" position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
             <div className="page-container">
               <Suspense fallback={<div className="text-gray-300">Loading…</div>}>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
-                  <Route path="/dashboard/overview" element={<DashboardOverview />} />
-                  <Route path="/dashboard/gold" element={<DashboardGold />} />
-                  <Route path="/dashboard/nas100" element={<DashboardNas100 />} />
-                  <Route path="/trades" element={<Trades />} />
-                  <Route path="/positions/:id" element={<PositionDetail />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
-                </Routes>
+                <ErrorBoundary>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
+                    <Route path="/dashboard/overview" element={<DashboardOverview />} />
+                    <Route path="/dashboard/gold" element={<DashboardGold />} />
+                    <Route path="/dashboard/nas100" element={<DashboardNas100 />} />
+                    <Route path="/trades" element={<Trades />} />
+                    <Route path="/positions/:id" element={<PositionDetail />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
+                  </Routes>
+                </ErrorBoundary>
               </Suspense>
             </div>
           </main>
@@ -215,3 +217,28 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, onClick }) => {
 };
 
 export default App;
+
+// Simple error boundary to surface runtime issues instead of a blank screen
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; message?: string }>{
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, message: error?.message || String(error) };
+  }
+  componentDidCatch(error: any, info: any) {
+    console.error('[ErrorBoundary] Caught error:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 m-4 rounded-lg border border-red-500/40 bg-red-900/20 text-red-200">
+          <h3 className="font-semibold mb-2">Something went wrong</h3>
+          <p className="text-sm">{this.state.message}</p>
+        </div>
+      );
+    }
+    return this.props.children as any;
+  }
+}
