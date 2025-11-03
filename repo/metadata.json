@@ -1,0 +1,5 @@
+{
+  "name": "Paper Trader",
+  "description": "A no-code web app to ingest TradingView webhook alerts, simulate trades with fixed risk, and log plain-English explanations for every trade.",
+  "requestFramePermissions": []
+}

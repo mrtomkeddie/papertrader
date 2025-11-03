@@ -1,0 +1,58 @@
+import { fetchOHLCV } from './dataService';
+import { evaluateORB } from '../strategies/orb';
+import { evaluateVWAPReversion } from '../strategies/vwapReversion';
+import { evaluateTrendPullback } from '../strategies/trendPullback';
+import { Side, StrategySignal } from '../types';
+import { calculateADX } from '../strategies/indicators';
+
+// StrategySignal type is now imported from types.ts
+
+export async function getStrategySignals(symbol: string, timeframe: string): Promise<StrategySignal[]> {
+  try {
+    const now = new Date();
+    const hour = now.getUTCHours();
+    const minute = now.getUTCMinutes();
+    const dow = now.getUTCDay();
+    const inForex = dow >= 1 && dow <= 5;
+
+    const signalsBucket: any[] = [];
+
+    // ORB: allow during full forex session window (12:00–20:00 UTC) on 15m data
+    if (inForex && hour >= 12 && hour < 20) {
+      const orbOhlcv = await fetchOHLCV(symbol, '15m', 120);
+      const s = evaluateORB(orbOhlcv);
+      if (s) signalsBucket.push({ ...s, strategy: 'ORB' });
+    }
+
+    // VWAP Reversion window: 14–17 UTC on instrument timeframe (gold: 15m)
+    if (inForex && hour >= 14 && hour < 17) {
+      const ohlcvExec = await fetchOHLCV(symbol, timeframe, 150);
+      const s = evaluateVWAPReversion(ohlcvExec);
+      if (s) signalsBucket.push({ ...s, strategy: 'VWAP Reversion' });
+    }
+
+    // Trend Pullback: allow during full forex session window (12:00–20:00 UTC) with ADX > 25 gating
+    if (inForex && hour >= 12 && hour < 20) {
+      const ohlcvExec = await fetchOHLCV(symbol, timeframe, 150);
+      const adxSeries = calculateADX(ohlcvExec, 14);
+      const latestAdx = adxSeries[adxSeries.length - 1] ?? NaN;
+      if (Number.isFinite(latestAdx) && latestAdx > 25) {
+        const s = evaluateTrendPullback(ohlcvExec);
+        if (s) signalsBucket.push({ ...s, strategy: 'Trend Pullback' });
+      }
+    }
+
+    const signals: StrategySignal[] = signalsBucket
+      .map((s: any) => {
+        const risk = Math.abs(s.entry - s.stop);
+        const reward = s.side === Side.LONG ? s.tp - s.entry : s.entry - s.tp;
+        const rrr = risk > 0 ? (reward / risk) : 0;
+        return { ...s, rrr } as StrategySignal;
+      });
+
+    return signals;
+  } catch (error) {
+    console.error(`Error evaluating strategies for ${symbol}:`, error);
+    return [];
+  }
+}
