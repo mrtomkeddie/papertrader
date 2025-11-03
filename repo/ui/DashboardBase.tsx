@@ -76,6 +76,7 @@ export default function DashboardBase({ title, strategyFilter }: {
   const totalPnl = useMemo(() => closedInRange.reduce((a, p) => a + (p.pnl_gbp ?? 0), 0), [closedInRange]);
   const winCount = useMemo(() => closedInRange.filter(p => (p.pnl_gbp ?? 0) > 0).length, [closedInRange]);
   const winRate = useMemo(() => closedInRange.length ? (winCount / closedInRange.length) * 100 : 0, [closedInRange, winCount]);
+  const lossCount = useMemo(() => closedInRange.filter(p => (p.pnl_gbp ?? 0) < 0).length, [closedInRange]);
   const avgR = useMemo(() => closedInRange.length ? closedInRange.reduce((a, p) => a + (p.R_multiple ?? 0), 0) / closedInRange.length : 0, [closedInRange]);
   const profitFactor = useMemo(() => {
     const gain = closedInRange.filter(p => (p.pnl_gbp ?? 0) > 0).reduce((a,p) => a + (p.pnl_gbp ?? 0), 0);
@@ -140,6 +141,12 @@ export default function DashboardBase({ title, strategyFilter }: {
   const autopilotLabel = AUTOPILOT_ENABLED ? (windowName !== 'none' ? 'ENABLED' : 'DISABLED') : 'DISABLED';
 
   const location = useLocation();
+  const tabs = [
+    { to: '/dashboard/overview', label: 'Overview' },
+    { to: '/dashboard/gold', label: 'Gold' },
+    { to: '/dashboard/nas100', label: 'NAS100' },
+  ];
+  const activeIndex = Math.max(0, tabs.findIndex(t => t.to === location.pathname));
 
   if (positionsLoading || ledgerLoading || strategiesLoading) {
     return <div className="text-center text-xl text-primary-light">Loading data...</div>;
@@ -150,17 +157,21 @@ export default function DashboardBase({ title, strategyFilter }: {
       {/* Header + Tabs */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">{title === 'Overview' ? 'Dashboard' : `Dashboard — ${title}`}</h2>
-          <div className="mt-3 flex gap-2 text-sm overflow-x-auto no-scrollbar -mx-1 px-1">
-            <NavLink to="/dashboard/overview" className={({ isActive }) => `px-3 py-1.5 rounded-full border border-transparent ${isActive ? 'tab-accent-active' : 'tab-accent'} hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green`}>Overview</NavLink>
-            <NavLink to="/dashboard/gold" className={({ isActive }) => `px-3 py-1.5 rounded-full border border-transparent ${isActive ? 'tab-accent-active' : 'tab-accent'} hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green`}>Gold</NavLink>
-            <NavLink to="/dashboard/nas100" className={({ isActive }) => `px-3 py-1.5 rounded-full border border-transparent ${isActive ? 'tab-accent-active' : 'tab-accent'} hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green`}>NAS100</NavLink>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">{title === 'Overview' ? 'Dashboard' : title}</h2>
+          <div className="mt-3 -mx-1 px-1">
+            <div className="segmented text-sm" style={{ ['--index' as any]: activeIndex }}>
+              {tabs.map(({ to, label }) => (
+                <NavLink key={to} to={to} className={({ isActive }) => `segmented-item`} data-active={location.pathname === to ? 'true' : 'false'}>
+                  {label}
+                </NavLink>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Summary */}
-      <SummaryBar tradesToday={tradesToday} totalPnl={totalPnl} winRate={winRate} profitFactor={profitFactor} avgR={avgR} windowStatus={autopilotLabel} range={range} onRangeChange={setRange} ledger={ledger ?? []} />
+      <SummaryBar totalPnl={totalPnl} winRate={winRate} wins={winCount} losses={lossCount} windowStatus={autopilotLabel} range={range} onRangeChange={setRange} ledger={ledger ?? []} />
 
       {/* Bot / Instrument Cards */}
       {!strategyFilter ? (
@@ -169,58 +180,58 @@ export default function DashboardBase({ title, strategyFilter }: {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Gold */}
             <div className="card-premium p-5">
-              <div className="flex items-center justify-between mb-4">
+              <div className="section-head flex items-center justify-between mb-4 p-2 rounded">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_4px_var(--accent-glow)]"></span>
                   <h4 className="text-base font-semibold">Gold</h4>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full border border-border text-text-secondary">{autopilotLabel}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${autopilotLabel === 'ENABLED' ? 'badge-enabled border-transparent' : 'border-border text-text-secondary'}`}>{autopilotLabel}</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Trades Today</p>
-                  <p className="font-mono text-white text-2xl font-bold">{goldMetrics.tradesToday}</p>
+                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Trades Today</p>
+                  <p className="font-mono text-white text-3xl font-semibold">{goldMetrics.tradesToday}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Win Rate</p>
-                  <p className="font-mono text-white text-2xl font-bold">{goldMetrics.winRate.toFixed(1)}%</p>
+                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Win Rate</p>
+                  <p className="font-mono text-white text-3xl font-semibold">{goldMetrics.winRate.toFixed(1)}%</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Wins / Losses</p>
-                  <p className="font-mono text-2xl font-bold"><span className="text-accent-green">{goldMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{goldMetrics.losses}</span></p>
+                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Wins / Losses</p>
+                  <p className="font-mono text-3xl font-semibold"><span className="text-accent-green">{goldMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{goldMetrics.losses}</span></p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">P&L</p>
-                  <p className={`font-mono text-2xl font-bold ${goldMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{goldMetrics.pnl.toFixed(2)}</p>
+                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">P&L</p>
+                  <p className={`font-mono text-3xl font-semibold ${goldMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{goldMetrics.pnl.toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
             {/* NAS100 */}
             <div className="card-premium p-5">
-              <div className="flex items-center justify-between mb-4">
+              <div className="section-head flex items-center justify-between mb-4 p-2 rounded">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_4px_var(--accent-glow)]"></span>
                   <h4 className="text-base font-semibold">NAS100</h4>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full border border-border text-text-secondary">{autopilotLabel}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${autopilotLabel === 'ENABLED' ? 'badge-enabled border-transparent' : 'border-border text-text-secondary'}`}>{autopilotLabel}</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Trades Today</p>
-                  <p className="font-mono text-white text-2xl font-bold">{nasMetrics.tradesToday}</p>
+                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Trades Today</p>
+                  <p className="font-mono text-white text-3xl font-semibold">{nasMetrics.tradesToday}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Win Rate</p>
-                  <p className="font-mono text-white text-2xl font-bold">{nasMetrics.winRate.toFixed(1)}%</p>
+                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Win Rate</p>
+                  <p className="font-mono text-white text-3xl font-semibold">{nasMetrics.winRate.toFixed(1)}%</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Wins / Losses</p>
-                  <p className="font-mono text-2xl font-bold"><span className="text-accent-green">{nasMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{nasMetrics.losses}</span></p>
+                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Wins / Losses</p>
+                  <p className="font-mono text-3xl font-semibold"><span className="text-accent-green">{nasMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{nasMetrics.losses}</span></p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">P&L</p>
-                  <p className={`font-mono text-2xl font-bold ${nasMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{nasMetrics.pnl.toFixed(2)}</p>
+                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">P&L</p>
+                  <p className={`font-mono text-3xl font-semibold ${nasMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{nasMetrics.pnl.toFixed(2)}</p>
                 </div>
               </div>
             </div>

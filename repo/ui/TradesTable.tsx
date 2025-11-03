@@ -32,9 +32,9 @@ const TradesTable: React.FC<TradesTableProps> = ({ positions }) => {
             <tr key={p.id}>
               <td>{fmtDate(p.exit_ts ?? p.entry_ts)}</td>
               <td>{p.symbol}</td>
-              <td className={p.side === Side.LONG ? 'text-green-300' : 'text-red-300'}>{p.side}</td>
+              <td className={p.side === Side.LONG ? 'text-accent-green' : 'text-red-300'}>{p.side}</td>
               <td>{p.method_name ?? p.strategy_id ?? '—'}</td>
-              <td className={(p.pnl_gbp ?? 0) >= 0 ? 'text-green-300' : 'text-red-300'}>{p.pnl_gbp != null ? p.pnl_gbp.toFixed(2) : '—'}</td>
+              <td className={(p.pnl_gbp ?? 0) >= 0 ? 'text-accent-green' : 'text-red-300'}>{p.pnl_gbp != null ? p.pnl_gbp.toFixed(2) : '—'}</td>
               <td>{p.R_multiple != null ? p.R_multiple.toFixed(2) : '—'}</td>
               <td>{p.status}</td>
             </tr>

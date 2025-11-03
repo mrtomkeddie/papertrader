@@ -179,29 +179,28 @@ const Dashboard: React.FC = () => {
 
       {/* Account Summary */}
       <div className="card-premium p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
-        <h3 className="text-lg font-semibold text-white mb-4">Account Summary</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+        <h3 className="text-xl sm:text-2xl font-semibold text-white mb-4">Account Summary</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
               {/* Row 1: Account Balance (left) | Total P&L (right) */}
               <div>
-                <p className="text-xs sm:text-sm text-gray-400 mb-1">Account Balance</p>
-                <p className="text-xl sm:text-3xl font-semibold text-white font-mono whitespace-nowrap tracking-tight leading-tight">£{accountBalance.toFixed(2)}</p>
-                <p className="text-[11px] sm:text-xs text-gray-500">Base £{baseAccountGbp.toFixed(0)}</p>
+                <p className="text-[11px] tracking-wide text-text-secondary mb-1">Account Balance</p>
+                <p className="text-3xl font-semibold text-white font-mono whitespace-nowrap tracking-tight leading-tight">£{accountBalance.toFixed(2)}</p>
               </div>
               <div className="text-right sm:text-left">
-                <p className="text-xs sm:text-sm text-gray-400 mb-1">Total P&L</p>
-                <p className={`text-xl sm:text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${latestCashAfter >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{latestCashAfter.toFixed(2)}</p>
-                <p className="text-[11px] sm:text-xs text-gray-500">All-time realized</p>
+                <p className="text-[11px] tracking-wide text-text-secondary mb-1">Total P&L</p>
+                <p className={`text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${latestCashAfter >= 0 ? 'text-accent-green' : 'text-red-300'}`}>£{latestCashAfter.toFixed(2)}</p>
+                <p className="text-xs text-gray-500">All-time realized</p>
               </div>
 
               {/* Row 2: Win Rate (left) | Wins/Losses (right) */}
               <div>
-                <p className="text-xs sm:text-sm text-gray-400 mb-1">Win Rate</p>
-                <p className="text-xl sm:text-3xl font-semibold text-white font-mono whitespace-nowrap tracking-tight leading-tight">{winLoss.winRate.toFixed(1)}%</p>
+                <p className="text-[11px] tracking-wide text-text-secondary mb-1">Win Rate</p>
+                <p className="text-3xl font-semibold text-white font-mono whitespace-nowrap tracking-tight leading-tight">{winLoss.winRate.toFixed(1)}%</p>
               </div>
               <div className="text-right sm:text-left">
-                <p className="text-xs sm:text-sm text-gray-400 mb-1">Wins / Losses</p>
-                <p className="text-xl sm:text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight">
-                  <span className="text-green-300">{winLoss.wins}</span>
+                <p className="text-[11px] tracking-wide text-text-secondary mb-1">Wins / Losses</p>
+                <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight">
+                  <span className="text-accent-green">{winLoss.wins}</span>
                   <span className="text-gray-400"> / </span>
                   <span className="text-red-300">{winLoss.losses}</span>
                 </p>
@@ -212,33 +211,33 @@ const Dashboard: React.FC = () => {
       {/* Bots Overview (Main Focus) moved to top */}
       <div className="card-premium p-5 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Bots Overview</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {botMetrics.map(b => (
             <button key={b.id} onClick={() => setSelectedBot(b.id)} className="text-left">
-              <div className="card-premium p-4 rounded-lg shadow-lg hover:bg-[rgba(24,24,24,0.75)] hover:ring-1 hover:ring-white/10 transition">
-                <div className="flex items-center justify-between">
+              <div className="card-premium p-4 rounded-lg shadow-lg transition">
+                <div className="section-head flex items-center justify-between p-2 rounded">
                   <div className="flex items-center gap-2">
-                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${b.indicator==='green'?'bg-green-400':b.indicator==='red'?'bg-red-400':'bg-gray-400'}`} />
-                    <h4 className="text-base font-semibold text-white">{b.name}</h4>
+                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${b.indicator==='green'?'bg-[var(--accent)]':b.indicator==='red'?'bg-red-400':'bg-gray-400'}`} />
+                    <h4 className="text-sm font-medium text-gray-200">{b.name}</h4>
                   </div>
-                  <span className="text-xs text-gray-400">{b.status}</span>
+                  <span className="text-[11px] text-text-secondary">{b.status}</span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-gray-300">
                   <div>
-                    <p className="text-gray-400">Trades today</p>
+                    <p className="text-[11px] tracking-wide text-text-secondary">Trades today</p>
                     <p className="font-mono">{b.tradesToday} / {b.cap} cap</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Win Rate</p>
+                    <p className="text-[11px] tracking-wide text-text-secondary">Win Rate</p>
                     <p className="font-mono">{b.winRate.toFixed(1)}%</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Risk-Reward</p>
+                    <p className="text-[11px] tracking-wide text-text-secondary">Risk-Reward</p>
                     <p className="font-mono">{b.avgR.toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">P&L</p>
-                    <p className={`font-mono ${b.pnl >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{b.pnl.toFixed(2)}</p>
+                    <p className="text-[11px] tracking-wide text-text-secondary">P&L</p>
+                    <p className={`font-mono ${b.pnl >= 0 ? 'text-accent-green' : 'text-red-300'}`}>£{b.pnl.toFixed(2)}</p>
                   </div>
                 </div>
                 {(() => {
@@ -270,11 +269,11 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 gap-6">
         <div className="card-premium p-5">
           <h3 className="text-lg font-semibold text-white mb-2">Portfolio Value</h3>
-          <div className="text-xs text-green-300 mb-3">+£{(stats.totalPnl).toFixed(2)}</div>
-          <div className="h-[260px] sm:h-[320px] lg:h-[380px]">
+        <div className="text-xs text-accent-green mb-3">+£{(stats.totalPnl).toFixed(2)}</div>
+          <div className="chart-gloss h-[260px] sm:h-[320px] lg:h-[380px]">
             <PortfolioLineChart ledger={ledger ?? []} />
           </div>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <button onClick={() => setRange('today')} className={`px-3 py-1 rounded text-xs ${range==='today'?'pill-active':'bg-[rgba(24,24,24,0.9)] text-gray-300 ring-1 ring-white/10'}`}>Today</button>
             <button onClick={() => setRange('week')} className={`px-3 py-1 rounded text-xs ${range==='week'?'pill-active':'bg-[rgba(24,24,24,0.9)] text-gray-300 ring-1 ring-white/10'}`}>This Week</button>
             <button onClick={() => setRange('all')} className={`px-3 py-1 rounded text-xs ${range==='all'?'pill-active':'bg-[rgba(24,24,24,0.9)] text-gray-300 ring-1 ring-white/10'}`}>All Time</button>
@@ -304,7 +303,7 @@ const Dashboard: React.FC = () => {
                     <li key={t.id || `${t.symbol}-${t.ts}`} className="flex justify-between">
                       <span className="font-mono">{t.symbol}</span>
                       <span className="text-xs text-gray-400">{new Date(t.exit_ts ?? t.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className={`font-mono ${((t.pnl_gbp ?? 0) >= 0) ? 'text-green-300' : 'text-red-300'}`}>£{(t.pnl_gbp ?? 0).toFixed(2)}</span>
+          <span className={`font-mono ${((t.pnl_gbp ?? 0) >= 0) ? 'text-accent-green' : 'text-red-300'}`}>£{(t.pnl_gbp ?? 0).toFixed(2)}</span>
                       <span className="font-mono">R {((t.R_multiple ?? 0)).toFixed(2)}</span>
                     </li>
                   ))}

@@ -165,9 +165,9 @@ const Dashboard: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h3 className="text-lg font-semibold text-white">Autopilot</h3>
-            <p className="text-sm text-gray-300">Status: <span className={`font-mono ${autopilotActive ? 'text-green-300' : 'text-gray-300'}`}>{autopilotLabel}</span></p>
+            <p className="text-[11px] tracking-wide text-gray-400">Status: <span className={`font-mono ${autopilotActive ? 'text-accent' : 'text-gray-300'}`}>{autopilotLabel}</span></p>
           </div>
-          <div className="text-sm text-gray-300">
+          <div className="text-[11px] tracking-wide text-gray-400">
             <p>Risk per trade: {AUTOPILOT_RISK_PCT.toFixed(2)}/trade</p>
           </div>
         </div>
@@ -176,10 +176,10 @@ const Dashboard: React.FC = () => {
       <div className="card-premium p-4 sm:p-5 rounded-lg shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${autopilotActive ? 'bg-green-700/40 text-green-300' : 'bg-red-700/40 text-red-300'}`}>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${autopilotActive ? 'bg-accent/20 text-accent' : 'bg-red-700/40 text-red-300'}`}>
               Autopilot {autopilotActive ? 'Enabled' : 'Disabled'}
             </span>
-            <div className="text-xs text-gray-400">Risk per trade: {AUTOPILOT_RISK_PCT.toFixed(2)}/trade</div>
+            <div className="text-[11px] tracking-wide text-gray-400">Risk per trade: {AUTOPILOT_RISK_PCT.toFixed(2)}/trade</div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setRange('today')} className={`px-3 py-1 rounded text-xs ${range==='today'?'bg-gray-700 text-white':'bg-gray-800 text-gray-300'}`}>Today</button>
@@ -189,24 +189,24 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-300">
           <div>
-            <p className="text-gray-400">Trades Today</p>
-            <p className="font-mono text-xl">{stats.tradesToday}</p>
+            <p className="text-[11px] tracking-wide text-gray-400">Trades Today</p>
+            <p className="font-mono text-3xl font-semibold">{stats.tradesToday}</p>
           </div>
           <div>
-            <p className="text-gray-400">Total P&L</p>
-            <p className={`font-mono text-xl ${stats.totalPnl >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{stats.totalPnl.toFixed(2)}</p>
+            <p className="text-[11px] tracking-wide text-gray-400">Total P&L</p>
+            <p className={`font-mono text-3xl font-semibold ${stats.totalPnl >= 0 ? 'text-accent' : 'text-red-300'}`}>£{stats.totalPnl.toFixed(2)}</p>
           </div>
           <div>
-            <p className="text-gray-400">Win Rate</p>
-            <p className="font-mono text-xl">{stats.winRate.toFixed(1)}%</p>
+            <p className="text-[11px] tracking-wide text-gray-400">Win Rate</p>
+            <p className="font-mono text-3xl font-semibold">{stats.winRate.toFixed(1)}%</p>
           </div>
           <div>
-            <p className="text-gray-400">Profit Factor</p>
-            <p className="font-mono text-xl">{stats.profitFactor > 0 ? stats.profitFactor.toFixed(2) : '—'}</p>
+            <p className="text-[11px] tracking-wide text-gray-400">Profit Factor</p>
+            <p className="font-mono text-3xl font-semibold">{stats.profitFactor > 0 ? stats.profitFactor.toFixed(2) : '—'}</p>
           </div>
           <div>
-            <p className="text-gray-400">Risk-Reward (avg)</p>
-            <p className="font-mono text-xl">{stats.avgR.toFixed(2)}</p>
+            <p className="text-[11px] tracking-wide text-gray-400">Risk-Reward (avg)</p>
+            <p className="font-mono text-3xl font-semibold">{stats.avgR.toFixed(2)}</p>
           </div>
         </div>
         <div className="mt-4">
@@ -226,27 +226,27 @@ const Dashboard: React.FC = () => {
               <div className="card-premium p-4 rounded-lg shadow-lg hover:bg-gray-800/50 transition">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${b.indicator==='green'?'bg-green-400':b.indicator==='red'?'bg-red-400':'bg-gray-400'}`} />
-                    <h4 className="text-base font-semibold text-white">{b.name}</h4>
+                    <span className={`inline-block w-2.5 h-2.5 rounded-full ${b.indicator==='green'?'bg-accent':b.indicator==='red'?'bg-red-400':'bg-gray-400'}`} />
+                    <h4 className="text-sm font-medium text-gray-200">{b.name}</h4>
                   </div>
                   <span className="text-xs text-gray-400">{b.status}</span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-gray-300">
                   <div>
-                    <p className="text-gray-400">Trades today</p>
+                    <p className="text-[11px] tracking-wide text-gray-400">Trades today</p>
                     <p className="font-mono">{b.tradesToday} / {b.cap} cap</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Win Rate</p>
+                    <p className="text-[11px] tracking-wide text-gray-400">Win Rate</p>
                     <p className="font-mono">{b.winRate.toFixed(1)}%</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Risk-Reward</p>
+                    <p className="text-[11px] tracking-wide text-gray-400">Risk-Reward</p>
                     <p className="font-mono">{b.avgR.toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">P&L</p>
-                    <p className={`font-mono ${b.pnl >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{b.pnl.toFixed(2)}</p>
+                    <p className="text-[11px] tracking-wide text-gray-400">P&L</p>
+                    <p className={`font-mono text-3xl font-semibold ${b.pnl >= 0 ? 'text-accent' : 'text-red-300'}`}>£{b.pnl.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -272,7 +272,7 @@ const Dashboard: React.FC = () => {
                     <li key={t.id || `${t.symbol}-${t.ts}`} className="flex justify-between">
                       <span className="font-mono">{t.symbol}</span>
                       <span className="text-xs text-gray-400">{new Date(t.exit_ts ?? t.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className={`font-mono ${((t.pnl_gbp ?? 0) >= 0) ? 'text-green-300' : 'text-red-300'}`}>£{(t.pnl_gbp ?? 0).toFixed(2)}</span>
+                      <span className={`font-mono ${((t.pnl_gbp ?? 0) >= 0) ? 'text-accent' : 'text-red-300'}`}>£{(t.pnl_gbp ?? 0).toFixed(2)}</span>
                       <span className="font-mono">R {((t.R_multiple ?? 0)).toFixed(2)}</span>
                     </li>
                   ))}
@@ -321,7 +321,7 @@ const Dashboard: React.FC = () => {
           <p className="text-sm text-gray-400">Open window: {formatUtcHourToLocal(12)} - {formatUtcHourToLocal(20)} (Mon-Fri)</p>
           {isForexHours(now) ? (
             <>
-              <p className="text-green-300 mt-2">Trading • Closes in {formatDuration(forexEndToday(now).getTime() - now.getTime())}</p>
+              <p className="text-accent mt-2">Trading • Closes in {formatDuration(forexEndToday(now).getTime() - now.getTime())}</p>
               <div className="mt-2 h-2 bg-gray-700 rounded">
                 <div className="h-2 bg-primary-dark rounded" style={{ width: `${sessionProgressPercent(12,20,now)}%` }} />
               </div>

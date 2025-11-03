@@ -184,18 +184,18 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, onAnalyz
   const rrr = trade.risk_reward_ratio?.toFixed(2);
   return (
     <div className="card-premium rounded-lg shadow p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <div className="text-white font-bold">{opportunity.symbol}</div>
           <div className="text-gray-400 text-sm">{trade.strategy_type} • TF {trade.suggested_timeframe}</div>
         </div>
         <button
-          className="px-3 py-1 bg-primary hover:bg-primary/80 text-white rounded"
+          className="w-full sm:w-auto px-3 py-1 btn-accent"
           onClick={() => onAnalyze(opportunity)}
         >Analyze</button>
       </div>
       <div className="mt-2 text-sm text-gray-300">
-        <div>Side: <span className={isLong ? 'text-green-400' : 'text-red-400'}>{isLong ? 'LONG' : 'SHORT'}</span></div>
+        <div>Side: <span className={isLong ? 'text-accent-green' : 'text-red-400'}>{isLong ? 'LONG' : 'SHORT'}</span></div>
         <div>Entry: {trade.entry_price.toFixed(2)} • Stop: {trade.stop_price.toFixed(2)} • TP: {trade.tp_price.toFixed(2)}</div>
         <div>RRR: {rrr}</div>
         <div className="text-xs text-gray-400 mt-1">{trade.reason}</div>

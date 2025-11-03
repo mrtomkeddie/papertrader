@@ -80,7 +80,7 @@ const RecentTradesCard: React.FC<Props> = ({ positions }) => {
               <td className="py-2 text-gray-300">{(p.method_name ?? p.strategy_id ?? 'Bot')}</td>
               <td className="py-2 font-mono">{p.symbol}</td>
               <td className="py-2 text-gray-300">{p.side === Side.LONG ? 'Long' : 'Short'}</td>
-              <td className={`py-2 text-right font-mono ${((p.pnl_gbp ?? 0) >= 0) ? 'text-green-300' : 'text-red-300'}`}>£{(p.pnl_gbp ?? 0).toFixed(2)}</td>
+              <td className={`py-2 text-right font-mono ${((p.pnl_gbp ?? 0) >= 0) ? 'text-accent-green' : 'text-red-300'}`}>£{(p.pnl_gbp ?? 0).toFixed(2)}</td>
               <td className="py-2 text-right font-mono">{(p.R_multiple ?? 0).toFixed(2)}</td>
             </tr>
           ))}

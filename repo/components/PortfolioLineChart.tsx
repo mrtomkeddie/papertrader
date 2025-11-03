@@ -24,9 +24,9 @@ const PortfolioLineChart: React.FC<Props> = ({ ledger }) => {
     });
 
     const series = chart.addAreaSeries({
-      lineColor: '#22c55e',
-      topColor: 'rgba(34,197,94,0.25)',
-      bottomColor: 'rgba(34,197,94,0.05)',
+      lineColor: '#10B981',
+      topColor: 'rgba(16,185,129,0.25)',
+      bottomColor: 'rgba(16,185,129,0.05)',
     });
 
     const sorted = [...(ledger || [])].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());

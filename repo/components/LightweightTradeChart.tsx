@@ -101,7 +101,7 @@ const LightweightTradeChart: React.FC<LightweightTradeChartProps> = ({ selectedP
       (positions || []).filter(p => p.symbol === selectedPosition.symbol).forEach(p => {
         const isSelected = p.id === selectedPosition.id;
         const entryColor = isSelected ? '#fbbf24' : (p.side === Side.LONG ? '#22c55e' : '#ef4444');
-        const exitColor = isSelected ? '#93c5fd' : '#93c5fd';
+        const exitColor = isSelected ? '#e5e7eb' : '#a1a1aa';
         const entryPos = p.side === Side.LONG ? 'belowBar' : 'aboveBar';
         const exitPos = p.side === Side.LONG ? 'aboveBar' : 'belowBar';
         markers.push({

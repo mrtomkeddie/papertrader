@@ -107,24 +107,24 @@ const Backtest: React.FC = () => {
           <h2 className="text-xl font-bold text-white mb-4">Backtest Results</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
             <div>
-              <p className="text-sm text-gray-400">Total Trades</p>
-              <p className="text-lg font-bold text-white">{result.totalTrades}</p>
+              <p className="text-[11px] tracking-wide text-gray-400">Total Trades</p>
+              <p className="text-3xl font-semibold text-white">{result.totalTrades}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-400">Win Rate</p>
-              <p className="text-lg font-bold text-white">{(result.winRate * 100).toFixed(2)}%</p>
+              <p className="text-[11px] tracking-wide text-gray-400">Win Rate</p>
+              <p className="text-3xl font-semibold text-white">{(result.winRate * 100).toFixed(2)}%</p>
             </div>
             <div>
-              <p className="text-sm text-gray-400">Average R</p>
-              <p className="text-lg font-bold text-white">{result.avgR.toFixed(2)}</p>
+              <p className="text-[11px] tracking-wide text-gray-400">Average R</p>
+              <p className="text-3xl font-semibold text-white">{result.avgR.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-400">Max Drawdown</p>
-              <p className="text-lg font-bold text-white">{result.maxDrawdown.toFixed(2)}%</p>
+              <p className="text-[11px] tracking-wide text-gray-400">Max Drawdown</p>
+              <p className="text-3xl font-semibold text-white">{result.maxDrawdown.toFixed(2)}%</p>
             </div>
             <div>
-              <p className="text-sm text-gray-400">Total Profit</p>
-              <p className="text-lg font-bold text-white">${result.totalProfit.toFixed(2)}</p>
+              <p className="text-[11px] tracking-wide text-gray-400">Total Profit</p>
+              <p className="text-3xl font-semibold text-white">${result.totalProfit.toFixed(2)}</p>
             </div>
           </div>
 
@@ -133,12 +133,12 @@ const Backtest: React.FC = () => {
             <table className="min-w-full">
               <thead className="bg-gray-700">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Entry Time</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Side</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Entry Price</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Exit Price</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">PnL</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">R Multiple</th>
+                  <th className="px-4 py-2 text-left text-[11px] tracking-wide text-gray-400">Entry Time</th>
+                  <th className="px-4 py-2 text-left text-[11px] tracking-wide text-gray-400">Side</th>
+                  <th className="px-4 py-2 text-left text-[11px] tracking-wide text-gray-400">Entry Price</th>
+                  <th className="px-4 py-2 text-left text-[11px] tracking-wide text-gray-400">Exit Price</th>
+                  <th className="px-4 py-2 text-left text-[11px] tracking-wide text-gray-400">PnL</th>
+                  <th className="px-4 py-2 text-left text-[11px] tracking-wide text-gray-400">R Multiple</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,7 +148,7 @@ const Backtest: React.FC = () => {
                     <td className="px-4 py-2 text-sm text-white">{trade.side}</td>
                     <td className="px-4 py-2 text-sm text-white">{trade.entryPrice.toFixed(4)}</td>
                     <td className="px-4 py-2 text-sm text-white">{trade.exitPrice.toFixed(4)}</td>
-                    <td className={`px-4 py-2 text-sm ${trade.pnl > 0 ? 'text-green-400' : 'text-red-400'}`}>{trade.pnl.toFixed(2)}</td>
+              <td className={`px-4 py-2 text-sm ${trade.pnl > 0 ? 'text-accent' : 'text-red-400'}`}>{trade.pnl.toFixed(2)}</td>
                     <td className="px-4 py-2 text-sm text-white">{trade.rMultiple.toFixed(2)}</td>
                   </tr>
                 ))}

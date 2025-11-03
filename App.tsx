@@ -112,7 +112,7 @@ const App: React.FC = () => {
             <p className="text-gray-400 mb-5">Use your Google account to access your data.</p>
             <button
               onClick={handleGoogleSignIn}
-              className="px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+              className="px-4 py-3 bg-accent text-white rounded-md hover:bg-accent-light transition"
             >
               Sign in with Google
             </button>

@@ -9,7 +9,7 @@ interface DashboardCardProps {
 }
 
 const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, change, changeType }) => {
-  const changeColor = changeType === 'positive' ? 'text-green-400' : 'text-red-400';
+  const changeColor = changeType === 'positive' ? 'text-accent-green' : 'text-red-400';
 
   return (
     <div className="card-premium p-3 sm:p-6 rounded-lg sm:rounded-xl transition-shadow">

@@ -69,7 +69,7 @@ const MarketSearchModal: React.FC<MarketSearchModalProps> = ({ isOpen, onSelectS
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {categorizedMarkets.map(([category, markets]) => (
                     <React.Fragment key={category}>
-                        <h3 className="text-lg font-semibold text-emerald-400 mt-4 mb-2 first:mt-0 col-span-full">{category}</h3>
+                        <h3 className="text-lg font-semibold text-accent-green mt-4 mb-2 first:mt-0 col-span-full">{category}</h3>
                         {markets.map(market => (
                             <button
                                 key={market.symbol}

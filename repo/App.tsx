@@ -22,6 +22,10 @@ const App: React.FC = () => {
   const [isAuthed, setIsAuthed] = useState<boolean>(!!auth?.currentUser);
   const setupMissing = !auth;
   const [authError, setAuthError] = useState<string | null>(null);
+  // Render-state debug to track which branch is active
+  try {
+    console.log('[render] App', { setupMissing, isAuthed, user: auth?.currentUser?.uid ?? null });
+  } catch {}
   useEffect(() => {
     if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {

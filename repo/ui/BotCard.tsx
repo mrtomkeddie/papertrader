@@ -55,7 +55,7 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
     : id === 'orb' ? 'XAUUSD • 15m • 12:15–20:00 UTC'
     : id === 'vwapReversion' ? 'XAUUSD • 15m • 14:00–17:00 UTC' : '';
   const statusEmoji = status === 'Active' ? '🟢' : status === 'Closed' ? '⚪' : '🔴';
-  const pnlColor = pnl > 0 ? 'text-green-300' : pnl < 0 ? 'text-red-300' : 'text-gray-400';
+const pnlColor = pnl > 0 ? 'text-accent-green' : pnl < 0 ? 'text-red-300' : 'text-gray-400';
 
 
   // Progress bar when window is open
@@ -74,21 +74,29 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
   const progressPct = open && durationMs > 0 ? Math.min(100, Math.max(0, (elapsedMs / durationMs) * 100)) : 0;
 
   return (
-    <div className={`card-neon card-outline fade-in p-4 transition`} aria-label={`${name} bot card`}>
+    <div className={`card-premium fade-in p-4 transition`} aria-label={`${name} bot card`}>
       {/* Header: Name left, Status chip right */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm sm:text-base font-semibold text-white">{name}</h4>
-        <span className="rounded-full px-2 py-0.5 text-[11px] sm:text-xs leading-none bg-black/40 text-gray-200 mr-1">{statusEmoji} {status}</span>
+        <h4 className="text-sm font-medium text-gray-200">{name}</h4>
+        <span className="badge-active text-[11px] sm:text-xs leading-none mr-1">{statusEmoji} {status}</span>
       </div>
       {/* Subtext */}
       <p className="mt-1 text-[11px] sm:text-xs text-gray-400">{subtext}</p>
 
-      {/* Today stats (wrap nicely on mobile) */}
-      <div className="mt-3 text-xs sm:text-sm text-gray-300 flex flex-wrap gap-x-3 gap-y-1">
-        <span>Today: Trades {tradesToday} / {capLabel}</span>
-        <span>• Win rate {winRate.toFixed(1)}%</span>
-        <span>• Avg R {avgR.toFixed(2)}</span>
-        <span className={`${pnlColor}`}>• P&L {fmtGBP(pnl)}</span>
+      {/* Today metrics – cleaner grid */}
+      <div className="mt-3 grid grid-cols-3 gap-3 text-xs sm:text-sm text-gray-300">
+        <div>
+          <p className="text-[11px] tracking-wide text-text-secondary">Trades today</p>
+          <p className="font-mono">{tradesToday} <span className="text-[10px] text-gray-500">/ {capLabel}</span></p>
+        </div>
+        <div>
+          <p className="text-[11px] tracking-wide text-text-secondary">Win rate</p>
+          <p className="font-mono">{winRate.toFixed(1)}%</p>
+        </div>
+        <div>
+          <p className="text-[11px] tracking-wide text-text-secondary">P&L</p>
+          <p className={`font-mono ${pnlColor}`}>{fmtGBP(pnl)}</p>
+        </div>
       </div>
 
       {/* Next window / countdown */}
@@ -105,33 +113,32 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
       {/* Progress bar when open */}
       {open && (
         <div className="mt-2 progress-track">
-          <div className="progress-accent" style={{ width: `${progressPct}%` }} />
+          <div className="progress-accent opacity-70" style={{ width: `${progressPct}%` }} />
         </div>
       )}
 
       {/* Sparkline removed per request */}
 
-      {/* Divider */}
-      <div className="mt-4 divider-gradient" />
+      
 
       {/* Trades and Skips */}
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         <div>
-          <h5 className="text-sm font-semibold text-white mb-2">Last 5 Trades</h5>
+          <h5 className="text-sm font-medium text-gray-300 mb-2">Last 5 Trades</h5>
           <ul className="space-y-2 text-xs text-gray-300">
             {recentTrades.map((t, idx) => {
               const r = (t?.R_multiple ?? null) as number | null;
-              const rColor = (r ?? 0) >= 0 ? 'bg-green-700/30 text-green-200' : 'bg-red-700/30 text-red-200';
+              const rColor = (r ?? 0) >= 0 ? 'bg-[rgba(16,185,129,0.15)] text-accent-green' : 'bg-red-700/30 text-red-200';
               return (
                 <li key={t.id ?? idx} className="flex items-center justify-between bg-black/30 p-2 rounded">
                   <div className="flex items-center gap-2">
-                    <span className={t?.side === 'LONG' ? 'text-green-300' : 'text-red-300'}>{t?.side ?? '—'}</span>
+            <span className={t?.side === 'LONG' ? 'text-accent-green' : 'text-red-300'}>{t?.side ?? '—'}</span>
                     <span className="text-gray-400">{t?.symbol ?? ''}</span>
                     <span className="text-gray-500">{fmtDate(t?.exit_ts ?? t?.entry_ts)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs ${rColor}`}>{typeof r === 'number' ? r.toFixed(2) : '—'}</span>
-                    <span className={((t?.pnl_gbp ?? 0) > 0) ? 'text-green-300' : ((t?.pnl_gbp ?? 0) < 0) ? 'text-red-300' : 'text-gray-400'}>{fmtGBP(t?.pnl_gbp)}</span>
+            <span className={((t?.pnl_gbp ?? 0) > 0) ? 'text-accent-green' : ((t?.pnl_gbp ?? 0) < 0) ? 'text-red-300' : 'text-gray-400'}>{fmtGBP(t?.pnl_gbp)}</span>
                   </div>
                 </li>
               );
@@ -142,7 +149,7 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
           </ul>
         </div>
         <div>
-          <h5 className="text-sm font-semibold text-white mb-2">Latest 5 Skips</h5>
+          <h5 className="text-sm font-medium text-gray-300 mb-2">Latest 5 Skips</h5>
           <ul className="space-y-2 text-xs text-gray-300">
             {skipReasons.slice(-5).map((m, idx) => (
               <li key={idx} className="bg-black/30 p-2 rounded">{m}</li>

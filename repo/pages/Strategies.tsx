@@ -53,9 +53,9 @@ const Strategies: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <h2 className="text-xl sm:text-3xl font-bold text-white">Webhook Strategy Profiles</h2>
-        <button onClick={() => openModal()} className="px-3 py-2 sm:px-4 sm:py-2 bg-primary-dark text-white rounded-md hover:bg-primary-darker transition text-center leading-tight">
+        <button onClick={() => openModal()} className="w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-2 btn-accent transition text-center leading-tight">
           Add Profile
         </button>
       </div>
@@ -70,13 +70,13 @@ const Strategies: React.FC = () => {
         <table className="min-w-full table-premium">
           <thead>
             <tr>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Symbol</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Risk (£)</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">TP (R)</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Stop Logic</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Enabled</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-text-secondary">Name</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-text-secondary">Symbol</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-text-secondary">Risk (£)</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-text-secondary">TP (R)</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-text-secondary">Stop Logic</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-text-secondary">Enabled</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-[11px] tracking-wide text-text-secondary">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-transparent divide-y divide-white/10">
@@ -88,7 +88,7 @@ const Strategies: React.FC = () => {
                 <td className="px-2 py-2 sm:px-4 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-300">{s.take_profit_R}</td>
                 <td className="px-2 py-2 sm:px-4 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-300">{s.stop_logic}</td>
                 <td className="px-2 py-2 sm:px-4 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${s.enabled ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${s.enabled ? 'badge-enabled' : 'bg-red-900 text-red-300'}`}>
                     {s.enabled ? 'Yes' : 'No'}
                   </span>
                 </td>
@@ -142,7 +142,7 @@ const StrategyModal: React.FC<{ strategy: Strategy | null, onSave: (strategy: St
                         <InputField label="Timeframe" name="timeframe" value={formState.timeframe} onChange={handleChange} placeholder="e.g., 5m, 1H, 1D" />
                         <InputField label="Risk per Trade (£)" name="risk_per_trade_gbp" type="number" value={formState.risk_per_trade_gbp} onChange={handleChange} />
                         <div>
-                           <label className="block text-sm font-medium text-gray-300 mb-1">Stop Logic</label>
+                           <label className="block text-[11px] tracking-wide text-text-secondary mb-1">Stop Logic</label>
                            <select name="stop_logic" value={formState.stop_logic} onChange={handleChange} className="block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-primary focus:border-primary text-white h-10 px-3">
                                 <option value={StopLogic.ATR}>ATR</option>
                                 <option value={StopLogic.SWING}>SWING</option>
@@ -154,12 +154,12 @@ const StrategyModal: React.FC<{ strategy: Strategy | null, onSave: (strategy: St
                         <InputField label="Fee (bps)" name="fee_bps" type="number" value={formState.fee_bps} onChange={handleChange} />
                         <div className="flex items-center space-x-3 pt-4 sm:pt-6">
                             <input type="checkbox" id="enabled" name="enabled" checked={formState.enabled} onChange={handleChange} className="h-4 w-4 rounded border-gray-400 text-primary focus:ring-primary" />
-                            <label htmlFor="enabled" className="text-sm text-gray-300">Enabled for Webhooks</label>
+                            <label htmlFor="enabled" className="text-[11px] tracking-wide text-text-secondary">Enabled for Webhooks</label>
                         </div>
                     </div>
                     <div className="flex justify-end space-x-3 pt-4 sm:pt-6">
                         <button type="button" onClick={onClose} className="px-3 py-2 sm:px-4 sm:py-2 bg-gray-600 rounded-md hover:bg-gray-500 text-center leading-tight">Cancel</button>
-                        <button type="submit" className="px-3 py-2 sm:px-4 sm:py-2 bg-primary-dark rounded-md hover:bg-primary-darker text-center leading-tight">Save</button>
+                        <button type="submit" className="px-3 py-2 sm:px-4 sm:py-2 btn-accent leading-tight">Save</button>
                     </div>
                 </form>
             </div>
@@ -169,7 +169,7 @@ const StrategyModal: React.FC<{ strategy: Strategy | null, onSave: (strategy: St
 
 const InputField: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
     <div>
-        <label htmlFor={props.name} className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+        <label htmlFor={props.name} className="block text-[11px] tracking-wide text-text-secondary mb-1">{label}</label>
         <input {...props} id={props.name} className="block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-primary focus:border-primary text-white h-10 px-3" />
     </div>
 );

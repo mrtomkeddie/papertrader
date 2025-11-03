@@ -308,7 +308,7 @@ const Settings: React.FC = () => {
         <div className="flex flex-wrap gap-3 sm:gap-4">
           <button
             onClick={() => signInWithGoogle()}
-            className="px-3 sm:px-4 py-2 sm:py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-center leading-tight"
+            className="px-3 sm:px-4 py-2 sm:py-3 bg-accent text-white rounded-md hover:bg-accent-light transition text-center leading-tight"
           >
             Sign in with Google
           </button>
@@ -468,7 +468,7 @@ const Settings: React.FC = () => {
       </div>
       
       {response && (
-            <div className={`mt-4 p-3 rounded-md text-sm ${response.type === 'success' ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}`}>
+            <div className={`mt-4 p-3 rounded-md text-sm ${response.type === 'success' ? 'bg-accent/20 text-accent' : 'bg-red-900 text-red-200'}`}>
                 {response.message}
             </div>
         )}

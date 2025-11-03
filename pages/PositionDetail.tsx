@@ -7,7 +7,7 @@ import LightweightTradeChart from '../components/LightweightTradeChart';
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color = 'text-white' }) => (
   <div>
-    <p className="text-sm text-gray-400">{label}</p>
+    <p className="text-[11px] tracking-wide text-gray-400">{label}</p>
     <p className={`text-lg font-semibold ${color}`}>{value}</p>
   </div>
 );
@@ -46,7 +46,7 @@ const PositionDetail: React.FC = () => {
     return <div className="text-center text-xl">Position not found.</div>;
   }
   
-  const pnlColor = position.pnl_gbp === null ? 'text-gray-400' : position.pnl_gbp >= 0 ? 'text-green-400' : 'text-red-400';
+  const pnlColor = position.pnl_gbp === null ? 'text-gray-400' : position.pnl_gbp >= 0 ? 'text-accent' : 'text-red-400';
   const riskedAmount = Math.abs(position.entry_price - position.stop_price) * position.qty;
 
   return (
@@ -86,7 +86,7 @@ const PositionDetail: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-6">
         <div className="card-premium p-3 sm:p-6 rounded-lg sm:rounded-xl shadow-lg grid grid-cols-2 md:grid-cols-4 gap-x-3 sm:gap-x-6 gap-y-4 sm:gap-y-8">
-            <DetailItem label="Side" value={position.side} color={position.side === Side.LONG ? 'text-green-400' : 'text-red-400'} />
+            <DetailItem label="Side" value={position.side} color={position.side === Side.LONG ? 'text-accent' : 'text-red-400'} />
             <DetailItem label="Quantity" value={position.qty.toFixed(6)} />
             <DetailItem label="P&L" value={position.pnl_gbp !== null ? `£${position.pnl_gbp.toFixed(2)}` : 'N/A'} color={pnlColor}/>
             <DetailItem label="R-Multiple" value={position.R_multiple !== null ? `${position.R_multiple.toFixed(2)}R` : 'N/A'} color={pnlColor} />

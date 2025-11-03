@@ -70,13 +70,13 @@ const Strategies: React.FC = () => {
         <table className="min-w-full table-premium">
           <thead>
             <tr>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Symbol</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Risk (£)</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">TP (R)</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Stop Logic</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Enabled</th>
-              <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-gray-400">Name</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-gray-400">Symbol</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-gray-400">Risk (£)</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-gray-400">TP (R)</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-gray-400">Stop Logic</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-[11px] tracking-wide text-gray-400">Enabled</th>
+              <th className="px-2 py-2 sm:px-4 sm:py-3 text-right text-[11px] tracking-wide text-gray-400">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-gray-800 divide-y divide-gray-700">
@@ -88,7 +88,7 @@ const Strategies: React.FC = () => {
                 <td className="px-2 py-2 sm:px-4 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-300">{s.take_profit_R}</td>
                 <td className="px-2 py-2 sm:px-4 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-300">{s.stop_logic}</td>
                 <td className="px-2 py-2 sm:px-4 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${s.enabled ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${s.enabled ? 'bg-accent/20 text-accent' : 'bg-red-900 text-red-300'}`}>
                     {s.enabled ? 'Yes' : 'No'}
                   </span>
                 </td>
@@ -142,7 +142,7 @@ const StrategyModal: React.FC<{ strategy: Strategy | null, onSave: (strategy: St
                         <InputField label="Timeframe" name="timeframe" value={formState.timeframe} onChange={handleChange} placeholder="e.g., 5m, 1H, 1D" />
                         <InputField label="Risk per Trade (£)" name="risk_per_trade_gbp" type="number" value={formState.risk_per_trade_gbp} onChange={handleChange} />
                         <div>
-                           <label className="block text-sm font-medium text-gray-300 mb-1">Stop Logic</label>
+                           <label className="block text-[11px] tracking-wide text-gray-400 mb-1">Stop Logic</label>
                            <select name="stop_logic" value={formState.stop_logic} onChange={handleChange} className="block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-primary focus:border-primary text-white h-10 px-3">
                                 <option value={StopLogic.ATR}>ATR</option>
                                 <option value={StopLogic.SWING}>SWING</option>
@@ -169,7 +169,7 @@ const StrategyModal: React.FC<{ strategy: Strategy | null, onSave: (strategy: St
 
 const InputField: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label: string }> = ({ label, ...props }) => (
     <div>
-        <label htmlFor={props.name} className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+        <label htmlFor={props.name} className="block text-[11px] tracking-wide text-gray-400 mb-1">{label}</label>
         <input {...props} id={props.name} className="block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-primary focus:border-primary text-white h-10 px-3" />
     </div>
 );

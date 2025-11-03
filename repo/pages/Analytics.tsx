@@ -128,7 +128,7 @@ const Analytics: React.FC = () => {
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{trade.symbol}</td>
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{trade.method_name || 'Unknown'}</td>
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{trade.side}</td>
-                    <td className={`px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm ${trade.pnl_gbp! > 0 ? 'text-green-400' : 'text-red-400'}`}>{trade.pnl_gbp!.toFixed(2)}</td>
+                    <td className={`px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm ${trade.pnl_gbp! > 0 ? 'text-accent-green' : 'text-red-400'}`}>{trade.pnl_gbp!.toFixed(2)}</td>
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{trade.R_multiple!.toFixed(2)}</td>
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{new Date(trade.exit_ts!).toLocaleDateString()}</td>
                   </tr>

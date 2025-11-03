@@ -114,12 +114,12 @@ const Analytics: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-700">
               <thead className="bg-gray-700">
                 <tr>
-                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-xs font-medium text-gray-300">Symbol</th>
-                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-xs font-medium text-gray-300">Strategy</th>
-                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-xs font-medium text-gray-300">Side</th>
-                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-xs font-medium text-gray-300">PnL (£)</th>
-                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-xs font-medium text-gray-300">R Multiple</th>
-                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-xs font-medium text-gray-300">Exit Date</th>
+                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-[11px] tracking-wide text-gray-400">Symbol</th>
+                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-[11px] tracking-wide text-gray-400">Strategy</th>
+                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-[11px] tracking-wide text-gray-400">Side</th>
+                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-[11px] tracking-wide text-gray-400">PnL (£)</th>
+                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-[11px] tracking-wide text-gray-400">R Multiple</th>
+                  <th className="px-2 py-1 sm:px-4 sm:py-2 text-left text-[11px] tracking-wide text-gray-400">Exit Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-600">
@@ -128,7 +128,7 @@ const Analytics: React.FC = () => {
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{trade.symbol}</td>
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{trade.method_name || 'Unknown'}</td>
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{trade.side}</td>
-                    <td className={`px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm ${trade.pnl_gbp! > 0 ? 'text-green-400' : 'text-red-400'}`}>{trade.pnl_gbp!.toFixed(2)}</td>
+                    <td className={`px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm ${trade.pnl_gbp! > 0 ? 'text-accent' : 'text-red-400'}`}>{trade.pnl_gbp!.toFixed(2)}</td>
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{trade.R_multiple!.toFixed(2)}</td>
                     <td className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-white">{new Date(trade.exit_ts!).toLocaleDateString()}</td>
                   </tr>

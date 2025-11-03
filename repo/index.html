@@ -29,10 +29,17 @@
                 darker: '#374151',
               },
               accent: {
-                DEFAULT: '#F59E0B',
-                light: '#FBBF24',
-                dark: '#D97706'
-              }
+                DEFAULT: '#10B981',
+                light: '#34D399',
+                dark: '#059669',
+                green: '#10B981'
+              },
+              text: {
+                primary: '#F3F4F6',
+                secondary: '#A1A1AA'
+              },
+              'app-base': '#0A0A0A',
+              border: '#1A1A1A'
             }
           }
         }
@@ -60,12 +67,16 @@
 </head>
   <body class="bg-black text-gray-100 h-full">
     <div id="root" class="h-full"></div>
+    <!-- Debug overlay: verifies HTML loaded before React mounts -->
+    <div id="preload-debug" style="position:fixed;top:8px;left:8px;color:#10B981;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.22);padding:6px 10px;border-radius:8px;font-family:Inter,system-ui,sans-serif;font-size:12px;z-index:99999;pointer-events:none">HTML loaded, waiting for React…</div>
     <script>
       // Inline boot marker to verify HTML is served and JS runs
       (function(){
         try {
           var el = document.getElementById('root');
           if (el && !el.textContent) el.textContent = 'Booting…';
+          var dbg = document.getElementById('preload-debug');
+          if (dbg) dbg.textContent = 'Boot script executed. React starting…';
         } catch (e) { /* no-op */ }
       })();
     </script>
