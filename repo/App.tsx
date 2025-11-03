@@ -198,7 +198,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, onClick }) => {
       end
       onClick={onClick}
       className={({ isActive }) =>
-        `flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-[rgba(16,185,129,0.05)] hover:text-accent-green transition-colors justify-start ${isActive ? 'nav-active' : ''}`
+        `flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-[rgba(16,185,129,0.05)] hover:text-accent-green transition-colors justify-start ${isActive ? 'nav-active border border-white/25 rounded-full' : ''}`
       }
     >
       <span className="w-8 h-8 flex items-center justify-center icon-chip">
