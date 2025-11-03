@@ -70,4 +70,29 @@ Notes:
 
 This app scans a narrow set of liquid markets using deterministic strategy rules and provides human-readable summaries and failure explanations. Strategies cover impulse (ORB), continuation (Trend Pullback), and mean reversion (VWAP Reversion). The LLM narrates only — entries, stops, and targets are rule-based.
 
-For deeper details, see `repo/README.md`.
+## Scanner Behavior
+- Scans selected instruments during optimal hours.
+- Forex: UTC 12–20 (London/NY overlap)
+- Crypto: UTC 13–22 (US peak volume)
+- Scan cadence: every 2 minutes during the open window.
+- Deterministic entries/stops/take-profits live in services and strategies; LLM is UX-only.
+
+## Autopilot Scheduler Rules
+- Minimum risk-reward (RR): `1.0`.
+- Volatility clamp (ATR% of price):
+  - Gold (`XAUUSD`): `0.15%–1.4%`
+  - Other instruments: `0.2%–1.2%`
+- ORB minimum opening range size: `0.10%` of price.
+- ORB and Trend Pullback strategies run concurrently across `12:00–20:00 UTC`.
+- Daily trade cap: `2` AI-generated trades per UTC day.
+- Skip logging includes reasons for: window closed, ATR clamp, RR below minimum, too-small opening range, duplicates, and concurrency on the same candle.
+
+## Concurrency Controls
+- `AUTOPILOT_SINGLE_POSITION=true` (or `VITE_AUTOPILOT_SINGLE_POSITION=true`)
+  - Enforces a single open position at a time across the account.
+  - New trades are rejected if any position is currently open.
+- `AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE=true` (or `VITE_AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE=true`)
+  - Blocks opening a new position that matches an existing open position’s `symbol` and `side`.
+  - Allows multiple positions overall but prevents duplicates on the same instrument and direction.
+
+Canonical docs live here; `repo/README.md` is a lightweight pointer to this file.
