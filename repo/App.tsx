@@ -133,12 +133,12 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-app-base text-gray-200 font-sans">
           {isMenuOpen && (
             <div 
-              className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+              className="fixed inset-0 bg-black/50 z-[90] md:hidden" 
               onClick={() => setIsMenuOpen(false)}
             />
           )}
           <aside 
-            className={`fixed top-0 left-0 h-screen w-64 sidebar-premium backdrop-blur-sm p-4 flex flex-col transform transition-transform duration-300 ease-in-out z-50 md:translate-x-0 md:w-64 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+            className={`fixed top-0 left-0 h-screen w-64 sidebar-premium backdrop-blur-sm p-4 flex flex-col transform transition-transform duration-300 ease-in-out z-[100] md:translate-x-0 md:w-64 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
           >
             <div className="mb-8 flex items-center justify-between">
               <img src="/ptlogo.png" alt="Paper Trader logo" className="h-8 w-auto mt-2 ml-2" />
