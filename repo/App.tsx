@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { HashRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import DashboardOverview from './pages/DashboardOverview';
 import DashboardGold from './pages/DashboardGold';
 import DashboardNas100 from './pages/DashboardNas100';
@@ -192,16 +192,16 @@ interface NavItemProps {
 }
 
 const NavItem: React.FC<NavItemProps> = ({ to, icon, children, onClick }) => {
-  const location = useLocation();
-  const isActive = location.pathname === to;
-
   return (
     <NavLink
       to={to}
+      end
       onClick={onClick}
-      className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-[rgba(16,185,129,0.05)] hover:text-accent-green transition-colors justify-start ${isActive ? "nav-active" : ""}`}
+      className={({ isActive }) =>
+        `flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-[rgba(16,185,129,0.05)] hover:text-accent-green transition-colors justify-start ${isActive ? 'nav-active' : ''}`
+      }
     >
-      <span className={`w-8 h-8 flex items-center justify-center icon-chip ${isActive ? 'nav-ring' : ''}`}>
+      <span className="w-8 h-8 flex items-center justify-center icon-chip">
         {icon}
       </span>
       <span>{children}</span>
