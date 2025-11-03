@@ -8,7 +8,8 @@
     "build": "npm --prefix repo run build",
     "preview": "npm --prefix repo run preview",
     "scheduler": "npm --prefix repo run scheduler",
-    "reset": "npm --prefix repo run reset"
+    "reset": "npm --prefix repo run reset",
+    "postinstall": "npm ci --prefix repo"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",
