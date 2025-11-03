@@ -209,7 +209,7 @@ export default function DashboardBase({ title, strategyFilter }: {
       {/* Bot Cards */}
       <div className="card-neon fade-in p-5 sm:p-6">
         <h3 className="text-lg font-semibold text-white mb-4">{title === 'Overview' ? 'Bots Overview' : `${title} — Bots Overview`}</h3>
-        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4`}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4`}>
           {botMetrics.map((b: any) => (
             <BotCard key={b.id} {...b} />
           ))}

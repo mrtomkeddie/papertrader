@@ -74,17 +74,17 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
   const progressPct = open && durationMs > 0 ? Math.min(100, Math.max(0, (elapsedMs / durationMs) * 100)) : 0;
 
   return (
-    <div className={`card-neon fade-in p-4 transition`} aria-label={`${name} bot card`}>
+    <div className={`card-neon card-outline fade-in p-4 transition`} aria-label={`${name} bot card`}>
       {/* Header: Name left, Status chip right */}
       <div className="flex items-center justify-between">
-        <h4 className="text-base font-semibold text-white">{name}</h4>
-        <span className="rounded-full px-3 py-1 text-xs leading-none bg-black/40 text-gray-200 mr-1">{statusEmoji} {status}</span>
+        <h4 className="text-sm sm:text-base font-semibold text-white">{name}</h4>
+        <span className="rounded-full px-2 py-0.5 text-[11px] sm:text-xs leading-none bg-black/40 text-gray-200 mr-1">{statusEmoji} {status}</span>
       </div>
       {/* Subtext */}
-      <p className="mt-1 text-xs text-gray-400">{subtext}</p>
+      <p className="mt-1 text-[11px] sm:text-xs text-gray-400">{subtext}</p>
 
       {/* Today stats (wrap nicely on mobile) */}
-      <div className="mt-3 text-sm text-gray-300 flex flex-wrap gap-x-3 gap-y-1">
+      <div className="mt-3 text-xs sm:text-sm text-gray-300 flex flex-wrap gap-x-3 gap-y-1">
         <span>Today: Trades {tradesToday} / {capLabel}</span>
         <span>• Win rate {winRate.toFixed(1)}%</span>
         <span>• Avg R {avgR.toFixed(2)}</span>
@@ -92,7 +92,7 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
       </div>
 
       {/* Next window / countdown */}
-      <div className="mt-2 text-xs text-gray-400">
+      <div className="mt-2 text-[11px] sm:text-xs text-gray-400">
         {status === 'Disabled' ? (
           <span>Bot disabled</span>
         ) : open ? (
@@ -115,7 +115,7 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
       <div className="mt-4 divider-gradient" />
 
       {/* Trades and Skips */}
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <h5 className="text-sm font-semibold text-white mb-2">Last 5 Trades</h5>
           <ul className="space-y-2 text-xs text-gray-300">

@@ -3,22 +3,18 @@
 
 :root {
   --heading-font: 'Manrope', 'Inter', 'sans-serif';
-  /* Lumen-style palette */
-  --bg-deep: #0a0d10;
-  --bg-grad-1: #0a0a0a; /* black-like */
-  --bg-grad-2: #0c0f12;
-  --surface: rgba(18, 25, 33, 0.85); /* deep slate */
-  --surface-strong: rgba(24, 24, 24, 0.95);
-  /* Neutral grey surface for cards */
-  --surface: rgba(24, 24, 24, 0.9);
-  --border: rgba(255, 255, 255, 0.10);
-  /* Legacy accent kept but no longer used for UI */
-  --accent: #9ca3af;
-  --accent-weak: rgba(255, 255, 255, 0.2);
-  --accent-strong: #d1d5db;
-  --text-muted: #9fb2aa;
+  /* Dark neon palette */
+  --bg-deep: #0B0E11;
+  --bg-grad-1: #0B0E11; /* base */
+  --bg-grad-2: #0B0E11; /* subtle */
+  --surface: #111418; /* card surface */
+  --border: #1E293B; /* subtle border */
+  --accent: #16F29A; /* brand green */
+  --danger: #EF4444;
+  --text-primary: #E2E8F0;
+  --text-secondary: #94A3B8;
   --shadow-strong: 0 22px 48px rgba(0,0,0,0.55), 0 2px 10px rgba(0,0,0,0.3);
-  --shadow-soft: 0 10px 28px rgba(0,0,0,0.45), 0 1px 8px rgba(0,0,0,0.3);
+  --shadow-soft: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 /* Apply brand heading font to all headers */
@@ -31,13 +27,11 @@ h1, h2, h3, h4, h5, h6,
 /* Premium page background and smoothing */
 body {
   background:
-    radial-gradient(1000px 500px at 8% 2%, rgba(34,211,150,0.08), transparent 65%),
-    radial-gradient(900px 500px at 85% 5%, rgba(255,255,255,0.06), transparent 70%),
-    linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+    radial-gradient(circle at top right, rgba(22,242,154,0.10), transparent 70%),
+    var(--bg-deep);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Fallback styles when Tailwind CDN is unavailable */
-  color: #d7e6df;
+  color: var(--text-primary);
   font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -49,14 +43,24 @@ body {
 }
 
 /* Premium card surface utility */
-.card-premium {
-  background: var(--surface);
+.card-neon {
+  background: linear-gradient(145deg, #111418 0%, #14171B 100%);
   border: 1px solid var(--border);
-  backdrop-filter: blur(6px);
   box-shadow: var(--shadow-soft);
-  border-radius: 14px;
+  border-radius: 16px;
 }
-/* Removed hover shadow effect for cleaner static cards */
+.card-neon:hover { box-shadow: 0 0 0 1px rgba(22,242,154,0.25) inset; }
+
+/* Stronger outline for cards when requested */
+.card-outline { border: 1px solid rgba(255,255,255,0.14); }
+
+/* Mobile tweaks: slightly stronger borders for clarity */
+@media (max-width: 640px) {
+  .card-neon { border-color: rgba(255,255,255,0.14); }
+}
+
+/* Legacy premium card retained for non-upgraded views */
+.card-premium { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-soft); }
 
 /* Subtle dividers */
 .divider-gradient {
@@ -80,17 +84,17 @@ body {
 
 /* Lumen-style UI utilities */
 .pill-active {
-  background: rgba(255,255,255,0.12);
-  color: #e5e7eb;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.16) inset;
+  background: rgba(22,242,154,0.15);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(22,242,154,0.25) inset;
 }
-.btn-mint {
-  background: rgba(24,24,24,0.9);
-  color: #e5e7eb;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+.btn-accent {
+  background: rgba(22,242,154,0.10);
+  color: var(--accent);
+  border: 1px solid rgba(22,242,154,0.25);
+  border-radius: 12px;
 }
-.btn-mint:hover { background: rgba(24,24,24,0.75); }
+.btn-accent:hover { background: rgba(22,242,154,0.20); }
 
 .searchbar {
   background: rgba(28,28,28,0.9);
@@ -99,9 +103,7 @@ body {
   border-radius: 12px;
 }
 
-.ring-mint {
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.22) inset;
-}
+.ring-mint { box-shadow: 0 0 0 1px rgba(22,242,154,0.35) inset; }
 
 /* Icon chip and active badge styles */
 .icon-chip { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; }
@@ -132,8 +134,24 @@ body {
 
 /* Sidebar nav active: bring back green selection only here */
 .nav-active {
-  background: rgba(34,211,150,0.16);
-  color: #16df9c;
-  box-shadow: 0 0 0 1px rgba(34,211,150,0.35) inset;
+  background: rgba(22,242,154,0.16);
+  color: #16F29A;
+  box-shadow: 0 0 0 1px rgba(22,242,154,0.35) inset;
 }
-.nav-ring { box-shadow: 0 0 0 1px rgba(34,211,150,0.35) inset; color: #16df9c; }
+.nav-ring { box-shadow: 0 0 0 1px rgba(22,242,154,0.35) inset; color: #16F29A; }
+
+/* Tabs: subtle glow on active */
+.tab-accent { background: rgba(22,242,154,0.10); color: var(--accent); }
+.tab-accent-active { background: rgba(22,242,154,0.15); color: var(--accent); box-shadow: 0 0 0 1px rgba(22,242,154,0.25) inset; }
+
+/* Animated fade-in */
+@keyframes fadeInCard { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInCard 300ms ease-out; }
+
+/* Pulsing glow for positive totals */
+@keyframes neonPulse { 0% { box-shadow: 0 0 0 0 rgba(22,242,154,0.0); } 50% { box-shadow: 0 0 24px 0 rgba(22,242,154,0.35); } 100% { box-shadow: 0 0 0 0 rgba(22,242,154,0.0); } }
+.glow-pulse { animation: neonPulse 1800ms ease-in-out infinite; }
+
+/* Progress bars (accent) */
+.progress-track { background: rgba(22,242,154,0.08); border-radius: 8px; }
+.progress-accent { background: rgba(22,242,154,0.35); height: 8px; border-radius: 8px; }
