@@ -167,6 +167,23 @@ const Dashboard: React.FC = () => {
         {/* Search removed per request */}
       </div>
 
+      {/* Account Summary */}
+      <div className="card-premium p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
+        <h3 className="text-lg font-semibold text-white mb-4">Account Summary</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+          <div>
+            <p className="text-xs sm:text-sm text-gray-400 mb-1">Account Balance</p>
+            <p className="text-xl sm:text-3xl font-semibold text-white font-mono whitespace-nowrap tracking-tight leading-tight">£{accountBalance.toFixed(2)}</p>
+            <p className="text-[11px] sm:text-xs text-gray-500">Base £{baseAccountGbp.toFixed(0)}</p>
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm text-gray-400 mb-1">Total P&L</p>
+            <p className={`text-xl sm:text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${latestCashAfter >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{latestCashAfter.toFixed(2)}</p>
+            <p className="text-[11px] sm:text-xs text-gray-500">All-time realized</p>
+          </div>
+        </div>
+      </div>
+
       {/* Bots Overview (Main Focus) moved to top */}
       <div className="card-premium p-5 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Bots Overview</h3>
