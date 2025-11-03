@@ -1,7 +1,9 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { HashRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
+import { HashRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
+import DashboardOverview from './pages/DashboardOverview';
+import DashboardGold from './pages/DashboardGold';
+import DashboardNas100 from './pages/DashboardNas100';
 const Trades = React.lazy(() => import('./pages/Trades'));
 const PositionDetail = React.lazy(() => import('./pages/PositionDetail'));
 const Settings = React.lazy(() => import('./pages/Settings'));
@@ -143,7 +145,7 @@ const App: React.FC = () => {
               </button>
             </div>
             <nav className="flex flex-col space-y-2">
-              <NavItem to="/" icon={<DashboardIcon />} onClick={() => setIsMenuOpen(false)}>Dashboard</NavItem>
+              <NavItem to="/dashboard/overview" icon={<DashboardIcon />} onClick={() => setIsMenuOpen(false)}>Dashboard</NavItem>
               <NavItem to="/trades" icon={<ListIcon />} onClick={() => setIsMenuOpen(false)}>Trades</NavItem>
               <NavItem to="/settings" icon={<SettingsIcon />} onClick={() => setIsMenuOpen(false)}>Settings</NavItem>
             </nav>
@@ -160,11 +162,14 @@ const App: React.FC = () => {
             <div className="page-container">
               <Suspense fallback={<div className="text-gray-300">Loading…</div>}>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/" element={<Navigate to="/dashboard/overview" replace />} />
+                  <Route path="/dashboard/overview" element={<DashboardOverview />} />
+                  <Route path="/dashboard/gold" element={<DashboardGold />} />
+                  <Route path="/dashboard/nas100" element={<DashboardNas100 />} />
                   <Route path="/trades" element={<Trades />} />
                   <Route path="/positions/:id" element={<PositionDetail />} />
                   <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<Dashboard />} />
+                  <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />
                 </Routes>
               </Suspense>
             </div>
