@@ -62,10 +62,19 @@ export default function DashboardBase({ title, strategyFilter }: {
     return out.map(s => s.toLowerCase());
   }, [strategyFilter]);
 
+  // Ensure instrument-specific filtering on instrument pages
+  const requiredInstrumentTokens: readonly string[] | undefined = useMemo(() => {
+    const t = title.toLowerCase();
+    if (t.includes('gold')) return instrumentTokens.gold;
+    if (t.includes('nas')) return instrumentTokens.nas100;
+    return undefined;
+  }, [title]);
+
   const matchesFilter = (p: Position): boolean => {
-    if (!expandedTokens) return true;
     const text = `${p.strategy_id ?? ''} ${p.method_name ?? ''} ${p.symbol ?? ''}`.toLowerCase();
-    return expandedTokens.some(t => text.includes(t));
+    const strategyOk = !expandedTokens || expandedTokens.some(t => text.includes(t));
+    const instrumentOk = !requiredInstrumentTokens || requiredInstrumentTokens.some(t => text.includes(t));
+    return strategyOk && instrumentOk;
   };
 
   const filteredPositions = useMemo(() => (positions ?? []).filter(matchesFilter), [positions, expandedTokens]);
@@ -171,7 +180,18 @@ export default function DashboardBase({ title, strategyFilter }: {
       </div>
 
       {/* Summary */}
-      <SummaryBar totalPnl={totalPnl} winRate={winRate} wins={winCount} losses={lossCount} windowStatus={autopilotLabel} range={range} onRangeChange={setRange} ledger={ledger ?? []} />
+      <SummaryBar
+        title={`${title} Summary`}
+        hideAccountBalance
+        totalPnl={totalPnl}
+        winRate={winRate}
+        wins={winCount}
+        losses={lossCount}
+        windowStatus={autopilotLabel}
+        range={range}
+        onRangeChange={setRange}
+        ledger={ledger ?? []}
+      />
 
       {/* Bot / Instrument Cards */}
       {!strategyFilter ? (

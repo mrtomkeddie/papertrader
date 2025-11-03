@@ -5,6 +5,8 @@ import { LedgerEntry } from '../types';
 export type TimeRange = 'today' | 'week' | 'all';
 
 interface SummaryBarProps {
+  title?: string;
+  hideAccountBalance?: boolean;
   totalPnl: number;
   winRate: number;
   wins: number;
@@ -16,6 +18,8 @@ interface SummaryBarProps {
 }
 
 const SummaryBar: React.FC<SummaryBarProps> = ({
+  title,
+  hideAccountBalance,
   totalPnl,
   winRate,
   wins,
@@ -36,7 +40,7 @@ const SummaryBar: React.FC<SummaryBarProps> = ({
   return (
     <div className="card-premium p-5 sm:p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold tracking-tight">Account Summary</h3>
+        <h3 className="text-lg font-semibold tracking-tight">{title ?? 'Account Summary'}</h3>
         <div className="flex items-center gap-2">
           <span className="text-xs uppercase tracking-wide text-text-secondary">Window</span>
           <span className={`text-[10px] px-2 py-0.5 rounded-full border ${windowStatus?.toUpperCase() === 'ENABLED' ? 'badge-enabled border-transparent' : 'border-border text-text-secondary'}`}>{windowStatus}</span>
@@ -69,11 +73,13 @@ const SummaryBar: React.FC<SummaryBarProps> = ({
         </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-5 sm:gap-6">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Account Balance</p>
-          <p className="font-mono text-xl sm:text-2xl font-bold text-white">£{accountBalance.toFixed(2)}</p>
-        </div>
+      <div className={`mt-4 grid grid-cols-2 ${hideAccountBalance ? 'md:grid-cols-3' : 'md:grid-cols-4'} gap-5 sm:gap-6`}>
+        {!hideAccountBalance && (
+          <div>
+            <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Account Balance</p>
+            <p className="font-mono text-xl sm:text-2xl font-bold text-white">£{accountBalance.toFixed(2)}</p>
+          </div>
+        )}
         <div>
           <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Total P&L</p>
           <p className={`font-mono text-xl sm:text-2xl font-bold ${totalPnl > 0 ? 'text-accent-green' : totalPnl < 0 ? 'text-red-400' : 'text-text-secondary'}`}>£{totalPnl.toFixed(2)}</p>
