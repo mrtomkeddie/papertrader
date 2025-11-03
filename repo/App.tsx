@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
 import DashboardOverview from './pages/DashboardOverview';
 import DashboardGold from './pages/DashboardGold';
 import DashboardNas100 from './pages/DashboardNas100';
@@ -19,7 +19,12 @@ import { Explanation } from './types';
 import { ListIcon as MenuIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
-  const [isAuthed, setIsAuthed] = useState<boolean>(!!auth?.currentUser);
+  // Dev-only bypass to make preview accessible without Google auth
+  const devBypass = Boolean((import.meta as any).env?.DEV) && (
+    ((import.meta as any).env?.VITE_DEV_BYPASS_AUTH ?? '') === '1' ||
+    String((import.meta as any).env?.VITE_DEV_BYPASS_AUTH ?? '').toLowerCase() === 'true'
+  );
+  const [isAuthed, setIsAuthed] = useState<boolean>(devBypass || !!auth?.currentUser);
   const setupMissing = !auth;
   const [authError, setAuthError] = useState<string | null>(null);
   // Render-state debug to track which branch is active
@@ -27,7 +32,7 @@ const App: React.FC = () => {
     console.log('[render] App', { setupMissing, isAuthed, user: auth?.currentUser?.uid ?? null });
   } catch {}
   useEffect(() => {
-    if (!auth) return;
+    if (!auth || devBypass) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       setIsAuthed(!!user);
       if (user) {
@@ -192,16 +197,16 @@ interface NavItemProps {
 }
 
 const NavItem: React.FC<NavItemProps> = ({ to, icon, children, onClick }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+
   return (
     <NavLink
       to={to}
-      end
       onClick={onClick}
-      className={({ isActive }) =>
-        `flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-[rgba(16,185,129,0.05)] hover:text-accent-green transition-colors justify-start ${isActive ? 'nav-active border border-white/25 rounded-full' : ''}`
-      }
+      className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-[rgba(16,185,129,0.05)] hover:text-accent-green transition-colors justify-start ${isActive ? "nav-active" : ""}`}
     >
-      <span className="w-8 h-8 flex items-center justify-center icon-chip">
+      <span className={`w-8 h-8 flex items-center justify-center icon-chip ${isActive ? 'nav-ring' : ''}`}>
         {icon}
       </span>
       <span>{children}</span>
