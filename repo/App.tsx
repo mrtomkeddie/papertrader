@@ -96,7 +96,7 @@ const App: React.FC = () => {
     <HashRouter>
       {Boolean((import.meta as any).env?.DEV) && (
         <div style={{position:'fixed',top:8,left:8,zIndex:99999,background:'rgba(16,185,129,0.12)',border:'1px solid rgba(16,185,129,0.22)',padding:'6px 10px',borderRadius:8,color:'#10B981',fontFamily:'Inter,system-ui,sans-serif',fontSize:12}}>
-          UI debug — setupMissing: {String(setupMissing)} · isAuthed: {String(isAuthed)}
+          UI debug — setupMissing: {String(setupMissing)} · isAuthed: {String(isAuthed)} · env: apiKey:{String(Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY))} authDom:{String(Boolean((import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN))} proj:{String(Boolean((import.meta as any).env?.VITE_FIREBASE_PROJECT_ID))}
         </div>
       )}
       {setupMissing ? (
