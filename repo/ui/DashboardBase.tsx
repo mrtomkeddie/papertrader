@@ -100,7 +100,9 @@ export default function DashboardBase({ title, strategyFilter }: {
     }
     if (instrument === 'nas') {
       return [
+        { id: 'orb', name: 'ORB', match: (p: Position) => symbolMatch(p) && (((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase().includes('orb') || ((p.strategy_id ?? '') as string).toLowerCase() === 'orb') },
         { id: 'trendatr_nas', name: 'Trend Pullback', match: (p: Position) => symbolMatch(p) && ((p.strategy_id ?? '') as string).toLowerCase() === 'trendatr_nas' },
+        { id: 'vwapReversion', name: 'VWAP Reversion', match: (p: Position) => symbolMatch(p) && (((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase().includes('vwap') || ((p.strategy_id ?? '') as string).toLowerCase() === 'vwapreversion') },
       ];
     }
     return [
