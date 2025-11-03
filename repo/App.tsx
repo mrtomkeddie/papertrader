@@ -135,7 +135,7 @@ const App: React.FC = () => {
             className={`fixed top-0 left-0 h-screen w-64 bg-black/70 backdrop-blur-sm border-r border-white/10 p-4 flex flex-col transform transition-transform duration-300 ease-in-out z-50 md:translate-x-0 md:w-64 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
           >
             <div className="mb-8 flex items-center justify-between">
-              <img src="/ptlogo.png" alt="Paper Trader logo" className="h-8 w-auto" />
+              <img src="/ptlogo.png" alt="Paper Trader logo" className="h-8 w-auto mt-2 ml-2" />
               <button className="md:hidden text-gray-300 p-2" onClick={() => setIsMenuOpen(false)}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
