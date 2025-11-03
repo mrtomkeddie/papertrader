@@ -4,7 +4,6 @@ import { HashRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react
 import DashboardOverview from './pages/DashboardOverview';
 import DashboardGold from './pages/DashboardGold';
 import DashboardNas100 from './pages/DashboardNas100';
-const Trades = React.lazy(() => import('./pages/Trades'));
 const PositionDetail = React.lazy(() => import('./pages/PositionDetail'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 import { DashboardIcon, ListIcon, SettingsIcon } from './components/icons/Icons';
@@ -151,7 +150,6 @@ const App: React.FC = () => {
             </div>
             <nav className="flex flex-col space-y-2">
               <NavItem to="/dashboard/overview" icon={<DashboardIcon />} onClick={() => setIsMenuOpen(false)}>Dashboard</NavItem>
-              <NavItem to="/trades" icon={<ListIcon />} onClick={() => setIsMenuOpen(false)}>Trades</NavItem>
               <NavItem to="/settings" icon={<SettingsIcon />} onClick={() => setIsMenuOpen(false)}>Settings</NavItem>
             </nav>
           </aside>
@@ -172,7 +170,6 @@ const App: React.FC = () => {
                     <Route path="/dashboard/overview" element={<DashboardOverview />} />
                     <Route path="/dashboard/gold" element={<DashboardGold />} />
                     <Route path="/dashboard/nas100" element={<DashboardNas100 />} />
-                    <Route path="/trades" element={<Trades />} />
                     <Route path="/positions/:id" element={<PositionDetail />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="*" element={<Navigate to="/dashboard/overview" replace />} />

@@ -1,9 +1,9 @@
 import React, { useMemo, useEffect } from 'react';
 import { useDatabase } from '../hooks/useDatabase';
-import { Position, PositionStatus, Strategy, LedgerEntry } from '../types';
+import { Position, PositionStatus, Strategy, LedgerEntry, Side } from '../types';
 import SummaryBar, { TimeRange } from './SummaryBar';
 import BotCard from './BotCard';
-import { NavLink, useLocation, useSearchParams } from 'react-router-dom';
+import { NavLink, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 
 export default function DashboardBase({ title, strategyFilter }: {
   title: string;
@@ -50,6 +50,18 @@ export default function DashboardBase({ title, strategyFilter }: {
     return true;
   };
 
+  const navigate = useNavigate();
+  const [instrumentFilter, setInstrumentFilter] = React.useState<'all' | 'gold' | 'nas100'>('all');
+  // Independent table range state
+  const [tableRange, setTableRange] = React.useState<TimeRange>('today');
+  const inTableRange = (ts?: string | null) => {
+    if (!ts) return false;
+    const t = new Date(ts);
+    if (tableRange === 'today') return t >= startOfToday;
+    if (tableRange === 'week') return t >= startOfWeek;
+    return true;
+  };
+
   const filterTokens: string[] | undefined = strategyFilter?.map(s => s.toLowerCase());
   const tokenSynonyms: Record<string, string[]> = {
     'trendatr_xau': ['trendatr', 'trend', 'xau', 'xauusd', 'oanda:xauusd', 'gold'],
@@ -61,6 +73,12 @@ export default function DashboardBase({ title, strategyFilter }: {
     for (const t of filterTokens) { out.push(t); (tokenSynonyms[t] || []).forEach(s => out.push(s)); }
     return out.map(s => s.toLowerCase());
   }, [strategyFilter]);
+
+  // Instrument tokens used for scoping dashboards and overview metrics
+  const instrumentTokens = {
+    gold: ['gold', 'xau', 'xauusd', 'oanda:xauusd'],
+    nas100: ['nas', 'nas100', 'us100', 'nas100_usd', 'oanda:nas100_usd'],
+  } as const;
 
   // Ensure instrument-specific filtering on instrument pages
   const requiredInstrumentTokens: readonly string[] | undefined = useMemo(() => {
@@ -93,6 +111,26 @@ export default function DashboardBase({ title, strategyFilter }: {
     return loss > 0 ? gain / loss : 0;
   }, [closedInRange]);
 
+  const recentTrades = useMemo(() => {
+    const list = positions ?? [];
+    const tokens = instrumentFilter === 'gold' ? instrumentTokens.gold : instrumentFilter === 'nas100' ? instrumentTokens.nas100 : undefined;
+    const filteredByInst = tokens
+      ? list.filter(p => {
+          const text = `${p.strategy_id ?? ''} ${p.method_name ?? ''} ${p.symbol ?? ''}`.toLowerCase();
+          return tokens.some(t => text.includes(t));
+        })
+      : list;
+    const filtered = filteredByInst.filter(p => inTableRange(p.exit_ts ?? p.entry_ts ?? p.ts));
+    return filtered
+      .slice()
+      .sort((a, b) => {
+        const ta = new Date(a.exit_ts ?? a.entry_ts ?? a.ts ?? 0).getTime();
+        const tb = new Date(b.exit_ts ?? b.entry_ts ?? b.ts ?? 0).getTime();
+        return tb - ta;
+      })
+      .slice(0, 20);
+  }, [positions, instrumentFilter, tableRange]);
+
   // Bot metrics (re-usable)
   const botDefs = [
     { id: 'orb', name: 'ORB', match: (p: Position) => ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase().includes('orb') },
@@ -120,10 +158,6 @@ export default function DashboardBase({ title, strategyFilter }: {
   }, [filteredPositions, range]);
 
   // Instrument overview metrics for Overview page
-  const instrumentTokens = {
-    gold: ['gold', 'xau', 'xauusd', 'oanda:xauusd'],
-    nas100: ['nas', 'nas100', 'us100', 'nas100_usd', 'oanda:nas100_usd'],
-  } as const;
 
   const getInstrumentMetrics = (tokens: readonly string[]) => {
     const list = (positions ?? []).filter(p => {
@@ -193,73 +227,81 @@ export default function DashboardBase({ title, strategyFilter }: {
         ledger={ledger ?? []}
       />
 
-      {/* Bot / Instrument Cards */}
-      {!strategyFilter ? (
-        <div className="card-premium p-6 fade-in">
-          <h3 className="text-lg font-semibold tracking-tight mb-4">Instruments Overview</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Gold */}
-            <div className="card-premium p-5">
-              <div className="section-head flex items-center justify-between mb-4 p-2 rounded">
-                <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_var(--accent-glow)]"></span>
-                  <span className="text-base font-semibold text-white">Gold</span>
-                </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${autopilotLabel === 'ENABLED' ? 'badge-enabled border-transparent' : 'border-border text-text-secondary'}`}>{autopilotLabel}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Trades Today</p>
-                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight text-white">{goldMetrics.tradesToday}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Win Rate</p>
-                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight text-white">{goldMetrics.winRate.toFixed(1)}%</p>
-                </div>
-                <div>
-                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Wins / Losses</p>
-                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight"><span className="text-accent-green">{goldMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{goldMetrics.losses}</span></p>
-                </div>
-                <div>
-                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">P&L</p>
-                  <p className={`text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${goldMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{goldMetrics.pnl.toFixed(2)}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* NAS100 */}
-            <div className="card-premium p-5">
-              <div className="section-head flex items-center justify-between mb-4 p-2 rounded">
-                <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_var(--accent-glow)]"></span>
-                  <span className="text-base font-semibold text-white">NAS100</span>
-                </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${autopilotLabel === 'ENABLED' ? 'badge-enabled border-transparent' : 'border-border text-text-secondary'}`}>{autopilotLabel}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Trades Today</p>
-                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight text-white">{nasMetrics.tradesToday}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Win Rate</p>
-                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight text-white">{nasMetrics.winRate.toFixed(1)}%</p>
-                </div>
-                <div>
-                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">Wins / Losses</p>
-                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight"><span className="text-accent-green">{nasMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{nasMetrics.losses}</span></p>
-                </div>
-                <div>
-                  <p className="text-[11px] tracking-wide text-text-secondary mb-1">P&L</p>
-                  <p className={`text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${nasMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{nasMetrics.pnl.toFixed(2)}</p>
-                </div>
-              </div>
+      {title === 'Overview' && (
+        <div className="card-premium p-5 sm:p-6 rounded-lg shadow-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-white">Recent Trades</h3>
+            <div className="flex items-center gap-4">
+              {(() => {
+                const instIndex = instrumentFilter === 'all' ? 0 : instrumentFilter === 'gold' ? 1 : 2;
+                return (
+                  <div className="segmented compact" style={{ ['--index' as any]: instIndex }} role="tablist" aria-label="Instrument filter">
+                    <button className="segmented-item" data-active={instrumentFilter === 'all' ? 'true' : 'false'} onClick={() => setInstrumentFilter('all')}>All</button>
+                    <button className="segmented-item" data-active={instrumentFilter === 'gold' ? 'true' : 'false'} onClick={() => setInstrumentFilter('gold')}>Gold</button>
+                    <button className="segmented-item" data-active={instrumentFilter === 'nas100' ? 'true' : 'false'} onClick={() => setInstrumentFilter('nas100')}>NAS100</button>
+                  </div>
+                );
+              })()}
+              {(() => {
+                const tableRangeIndex = tableRange === 'today' ? 0 : tableRange === 'week' ? 1 : 2;
+                return (
+                  <div className="segmented compact" style={{ ['--index' as any]: tableRangeIndex }} role="tablist" aria-label="Time range">
+                    <button className="segmented-item" data-active={tableRange === 'today' ? 'true' : 'false'} onClick={() => setTableRange('today')}>Today</button>
+                    <button className="segmented-item" data-active={tableRange === 'week' ? 'true' : 'false'} onClick={() => setTableRange('week')}>This Week</button>
+                    <button className="segmented-item" data-active={tableRange === 'all' ? 'true' : 'false'} onClick={() => setTableRange('all')}>All Time</button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-premium">
+              <thead>
+                <tr>
+                  <th className="text-left">Date</th>
+                  <th className="text-left">Symbol</th>
+                  <th className="text-left">Side</th>
+                  <th className="text-left">Strategy</th>
+                  <th className="text-right">P&L (GBP)</th>
+                  <th className="text-right">R Multiple</th>
+                  <th className="text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentTrades.map(p => {
+                  const when = new Date(p.exit_ts ?? p.entry_ts ?? p.ts ?? 0);
+                  const pnl = p.pnl_gbp ?? 0;
+                  const rMult = p.R_multiple ?? null;
+                  const sideLabel = p.side === Side.BUY ? 'Buy' : p.side === Side.SELL ? 'Sell' : (p.side || '').toString();
+                  return (
+                    <tr key={p.id || `${p.symbol}-${when.getTime()}`}
+                        className="cursor-pointer hover:bg-elevation-2"
+                        onClick={() => p.id && navigate(`/positions/${p.id}`)}>
+                      <td>{when.toLocaleString()}</td>
+                      <td className="uppercase">{p.symbol || '-'}</td>
+                      <td>{sideLabel}</td>
+                      <td>{p.strategy_id || p.method_name || '-'}</td>
+                      <td className={`text-right ${pnl > 0 ? 'text-accent-green' : pnl < 0 ? 'text-red-300' : ''}`}>{pnl.toFixed(2)}</td>
+                      <td className="text-right">{rMult == null ? '-' : rMult.toFixed(2)}</td>
+                      <td>{p.status === PositionStatus.OPEN ? 'Open' : 'Closed'}</td>
+                    </tr>
+                  );
+                })}
+                {recentTrades.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="text-center text-gray-400 py-4">No trades found for selected filter.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      ) : (
+      )}
+
+      {/* Bot cards only on instrument pages; nothing extra on Overview */}
+      {title !== 'Overview' && (
         <div className="card-premium p-5 sm:p-6 rounded-lg shadow-lg">
-          <h3 className="text-lg font-semibold text-white mb-4">Bot (Filtered)</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Bots Overview</h3>
           <div className={`grid grid-cols-1 md:grid-cols-3 gap-4`}>
             {botMetrics.map(b => (
               <BotCard key={b.id} {...b} />

@@ -204,7 +204,11 @@ body {
 }
 
 @media (max-width: 640px) {
-  .segmented { width: clamp(240px, 92vw, 540px); }
+.segmented { width: clamp(240px, 92vw, 540px); }
+
+/* Compact variant for tight spaces (tables, headers) */
+.segmented.compact { width: clamp(200px, 60vw, 360px); padding: 2px; }
+.segmented.compact .segmented-item { padding: 6px 8px; font-weight: 600; font-size: 12px; }
 }
 
 /* Animated fade-in */
