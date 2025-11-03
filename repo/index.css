@@ -176,17 +176,17 @@ body {
 /* Sidebar nav active: neutral glass pill */
 .nav-active {
   /* Pill-shaped outline without fill */
-  background: transparent;
+  background: transparent !important;
   color: var(--text-primary);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
   border-radius: 9999px; /* pill shape */
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset; /* subtle inner ring */
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset; /* subtle inner ring */
 }
 .nav-active .icon-chip {
   /* Remove inner chip box so the pill outline is the focus */
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 .nav-ring {
   box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset; /* subtle ring */
