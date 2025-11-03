@@ -181,9 +181,9 @@ export default function DashboardBase({ title, strategyFilter }: {
             {/* Gold */}
             <div className="card-premium p-5">
               <div className="section-head flex items-center justify-between mb-4 p-2 rounded">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_4px_var(--accent-glow)]"></span>
-                  <h4 className="text-base font-semibold">Gold</h4>
+                <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_var(--accent-glow)]"></span>
+                  <span className="text-base font-semibold text-white">Gold</span>
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full border ${autopilotLabel === 'ENABLED' ? 'badge-enabled border-transparent' : 'border-border text-text-secondary'}`}>{autopilotLabel}</span>
               </div>
@@ -210,9 +210,9 @@ export default function DashboardBase({ title, strategyFilter }: {
             {/* NAS100 */}
             <div className="card-premium p-5">
               <div className="section-head flex items-center justify-between mb-4 p-2 rounded">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_4px_var(--accent-glow)]"></span>
-                  <h4 className="text-base font-semibold">NAS100</h4>
+                <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_var(--accent-glow)]"></span>
+                  <span className="text-base font-semibold text-white">NAS100</span>
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full border ${autopilotLabel === 'ENABLED' ? 'badge-enabled border-transparent' : 'border-border text-text-secondary'}`}>{autopilotLabel}</span>
               </div>
