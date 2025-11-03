@@ -9,7 +9,7 @@
     "preview": "npm --prefix repo run preview",
     "scheduler": "npm --prefix repo run scheduler",
     "reset": "npm --prefix repo run reset",
-    "postinstall": "npm ci --prefix repo"
+    "postinstall": "cd repo && npm ci"
   },
   "dependencies": {
     "@google/genai": "^1.26.0",
