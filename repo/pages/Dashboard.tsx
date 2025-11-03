@@ -75,6 +75,16 @@ const Dashboard: React.FC = () => {
   }, [ledger, ledgerLoading]);
   const accountBalance = useMemo(() => baseAccountGbp + latestCashAfter, [baseAccountGbp, latestCashAfter]);
 
+  // Win/Loss metrics (all-time)
+  const winLoss = useMemo(() => {
+    if (positionsLoading || !positions) return { wins: 0, losses: 0, winRate: 0 };
+    const closedAll = positions.filter((p): p is Required<Position> => p.status === PositionStatus.CLOSED && p.pnl_gbp != null);
+    const wins = closedAll.filter(p => (p.pnl_gbp ?? 0) > 0).length;
+    const losses = closedAll.filter(p => (p.pnl_gbp ?? 0) < 0).length;
+    const winRate = closedAll.length ? (wins / closedAll.length) * 100 : 0;
+    return { wins, losses, winRate };
+  }, [positions, positionsLoading]);
+
   // Helpers for session countdowns
   const formatUtcHourToLocal = (hour: number) => { const d = new Date(); d.setUTCHours(hour, 0, 0, 0); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); };
   const formatDuration = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = s % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
@@ -180,6 +190,22 @@ const Dashboard: React.FC = () => {
             <p className="text-xs sm:text-sm text-gray-400 mb-1">Total P&L</p>
             <p className={`text-xl sm:text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${latestCashAfter >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{latestCashAfter.toFixed(2)}</p>
             <p className="text-[11px] sm:text-xs text-gray-500">All-time realized</p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+          <div>
+            <p className="text-xs sm:text-sm text-gray-400 mb-1">Win Rate</p>
+            <p className="text-sm sm:text-base font-semibold text-white font-mono">{winLoss.winRate.toFixed(1)}%</p>
+            <p className="text-[11px] sm:text-xs text-gray-500">All time</p>
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm text-gray-400 mb-1">Wins / Losses</p>
+            <p className="text-sm sm:text-base font-semibold font-mono">
+              <span className="text-green-300">{winLoss.wins}</span>
+              <span className="text-gray-400"> / </span>
+              <span className="text-red-300">{winLoss.losses}</span>
+            </p>
+            <p className="text-[11px] sm:text-xs text-gray-500">Closed trades (all time)</p>
           </div>
         </div>
       </div>
