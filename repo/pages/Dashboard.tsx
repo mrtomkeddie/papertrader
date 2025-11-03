@@ -196,7 +196,6 @@ const Dashboard: React.FC = () => {
           <div>
             <p className="text-xs sm:text-sm text-gray-400 mb-1">Win Rate</p>
             <p className="text-sm sm:text-base font-semibold text-white font-mono">{winLoss.winRate.toFixed(1)}%</p>
-            <p className="text-[11px] sm:text-xs text-gray-500">All time</p>
           </div>
           <div>
             <p className="text-xs sm:text-sm text-gray-400 mb-1">Wins / Losses</p>
@@ -205,7 +204,6 @@ const Dashboard: React.FC = () => {
               <span className="text-gray-400"> / </span>
               <span className="text-red-300">{winLoss.losses}</span>
             </p>
-            <p className="text-[11px] sm:text-xs text-gray-500">Closed trades (all time)</p>
           </div>
         </div>
       </div>
