@@ -115,7 +115,7 @@ const Trades: React.FC = () => {
       <h2 className="text-2xl sm:text-3xl font-bold text-white">All Trades</h2>
 
       {/* Filter bar */}
-      <div className="sm:static sticky top-0 z-10 relative px-5 sm:px-6 py-4 sm:py-5 card-premium rounded-lg shadow-lg">
+      <div className="sm:static sticky top-0 z-50 relative px-5 sm:px-6 py-4 sm:py-5 card-premium rounded-lg shadow-lg">
         <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-r from-white/5 via-transparent to-white/5" />
         <div className="relative z-10">
           <h3 className="text-sm font-semibold text-primary-light mb-2">Filters</h3>

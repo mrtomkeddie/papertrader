@@ -126,7 +126,7 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="min-h-screen bg-black text-gray-200 font-sans">
+        <div className="min-h-screen bg-app-base text-gray-200 font-sans">
           {isMenuOpen && (
             <div 
               className="fixed inset-0 bg-black/50 z-40 md:hidden" 
@@ -134,7 +134,7 @@ const App: React.FC = () => {
             />
           )}
           <aside 
-            className={`fixed top-0 left-0 h-screen w-64 bg-black/70 backdrop-blur-sm border-r border-white/10 p-4 flex flex-col transform transition-transform duration-300 ease-in-out z-50 md:translate-x-0 md:w-64 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+            className={`fixed top-0 left-0 h-screen w-64 sidebar-premium backdrop-blur-sm p-4 flex flex-col transform transition-transform duration-300 ease-in-out z-50 md:translate-x-0 md:w-64 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
           >
             <div className="mb-8 flex items-center justify-between">
               <img src="/ptlogo.png" alt="Paper Trader logo" className="h-8 w-auto mt-2 ml-2" />
@@ -150,7 +150,7 @@ const App: React.FC = () => {
               <NavItem to="/settings" icon={<SettingsIcon />} onClick={() => setIsMenuOpen(false)}>Settings</NavItem>
             </nav>
           </aside>
-          <header className="fixed top-0 left-0 right-0 h-16 bg-black/70 backdrop-blur-sm flex items-center justify-between px-4 z-30 md:hidden">
+          <header className="fixed top-0 left-0 right-0 h-16 header-premium backdrop-blur-sm flex items-center justify-between px-4 z-30 md:hidden">
             <button onClick={() => setIsMenuOpen(true)}>
               <MenuIcon />
             </button>
@@ -195,7 +195,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, onClick }) => {
     <NavLink
       to={to}
       onClick={onClick}
-      className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors justify-start ${isActive ? "nav-active" : ""}`}
+      className={`flex items-center space-x-3 p-2 rounded-lg text-gray-300 hover:bg-[rgba(16,185,129,0.05)] hover:text-accent-green transition-colors justify-start ${isActive ? "nav-active" : ""}`}
     >
       <span className={`w-8 h-8 flex items-center justify-center icon-chip ${isActive ? 'nav-ring' : ''}`}>
         {icon}

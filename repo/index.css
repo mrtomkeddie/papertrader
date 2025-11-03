@@ -3,22 +3,19 @@
 
 :root {
   --heading-font: 'Manrope', 'Inter', 'sans-serif';
-  /* Lumen-style palette */
-  --bg-deep: #0a0d10;
-  --bg-grad-1: #0a0a0a; /* black-like */
-  --bg-grad-2: #0c0f12;
-  --surface: rgba(18, 25, 33, 0.85); /* deep slate */
-  --surface-strong: rgba(24, 24, 24, 0.95);
-  /* Neutral grey surface for cards */
-  --surface: rgba(24, 24, 24, 0.9);
-  --border: rgba(255, 255, 255, 0.10);
-  /* Legacy accent kept but no longer used for UI */
-  --accent: #9ca3af;
-  --accent-weak: rgba(255, 255, 255, 0.2);
-  --accent-strong: #d1d5db;
-  --text-muted: #9fb2aa;
-  --shadow-strong: 0 22px 48px rgba(0,0,0,0.55), 0 2px 10px rgba(0,0,0,0.3);
-  --shadow-soft: 0 10px 28px rgba(0,0,0,0.45), 0 1px 8px rgba(0,0,0,0.3);
+  /* Dark-premium palette (Chainex-inspired) */
+  --bg-deep: #05070B;
+  --surface: #0D1117; /* card base */
+  --surface-hover: #121821; /* card hover */
+  --border: #1F2933; /* thin border */
+  --accent: #10B981; /* emerald */
+  --accent-glow: rgba(16,185,129,0.18);
+  --danger: #EF4444;
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.4);
+  --shadow-soft: 0 4px 12px rgba(0,0,0,0.3);
+  --radius-xl: 1.25rem; /* rounded-2xl */
 }
 
 /* Apply brand heading font to all headers */
@@ -31,13 +28,11 @@ h1, h2, h3, h4, h5, h6,
 /* Premium page background and smoothing */
 body {
   background:
-    radial-gradient(1000px 500px at 8% 2%, rgba(34,211,150,0.08), transparent 65%),
-    radial-gradient(900px 500px at 85% 5%, rgba(255,255,255,0.06), transparent 70%),
-    linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+    radial-gradient(circle at 85% -10%, rgba(16,185,129,0.08), transparent 70%),
+    var(--bg-deep);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Fallback styles when Tailwind CDN is unavailable */
-  color: #d7e6df;
+  color: var(--text-primary);
   font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -49,14 +44,36 @@ body {
 }
 
 /* Premium card surface utility */
+.card-neon {
+  background: linear-gradient(145deg, var(--surface) 0%, var(--surface-hover) 100%);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-xl);
+}
+.card-neon:hover { box-shadow: 0 0 0 1px var(--accent-glow) inset; }
+
+/* Stronger outline for cards when requested */
+.card-outline { border: 1px solid rgba(255,255,255,0.14); }
+
+/* Mobile tweaks: slightly stronger borders for clarity */
+@media (max-width: 640px) {
+  .card-neon { border-color: rgba(255,255,255,0.14); }
+}
+
+/* Premium card wrapper used across the app */
 .card-premium {
   background: var(--surface);
   border: 1px solid var(--border);
-  backdrop-filter: blur(6px);
-  box-shadow: var(--shadow-soft);
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  transition: background 200ms ease;
 }
-/* Removed hover shadow effect for cleaner static cards */
+.card-premium:hover { background: var(--surface-hover); }
+
+/* Mobile refinements for clarity on small screens */
+@media (max-width: 640px) {
+  .card-premium { border-color: rgba(255,255,255,0.14); box-shadow: 0 6px 16px rgba(0,0,0,0.35); }
+}
 
 /* Subtle dividers */
 .divider-gradient {
@@ -80,17 +97,17 @@ body {
 
 /* Lumen-style UI utilities */
 .pill-active {
-  background: rgba(255,255,255,0.12);
-  color: #e5e7eb;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.16) inset;
+  background: rgba(16,185,129,0.15);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-glow) inset;
 }
-.btn-mint {
-  background: rgba(24,24,24,0.9);
-  color: #e5e7eb;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+.btn-accent {
+  background: rgba(16,185,129,0.10);
+  color: var(--accent);
+  border: 1px solid var(--accent-glow);
+  border-radius: 12px;
 }
-.btn-mint:hover { background: rgba(24,24,24,0.75); }
+.btn-accent:hover { background: rgba(16,185,129,0.20); }
 
 .searchbar {
   background: rgba(28,28,28,0.9);
@@ -99,9 +116,7 @@ body {
   border-radius: 12px;
 }
 
-.ring-mint {
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.22) inset;
-}
+.ring-mint { box-shadow: 0 0 0 1px rgba(16,185,129,0.35) inset; }
 
 /* Icon chip and active badge styles */
 .icon-chip { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; }
@@ -132,8 +147,42 @@ body {
 
 /* Sidebar nav active: bring back green selection only here */
 .nav-active {
-  background: rgba(34,211,150,0.16);
-  color: #16df9c;
-  box-shadow: 0 0 0 1px rgba(34,211,150,0.35) inset;
+  background: rgba(16,185,129,0.10);
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
 }
-.nav-ring { box-shadow: 0 0 0 1px rgba(34,211,150,0.35) inset; color: #16df9c; }
+.nav-ring { box-shadow: 0 0 0 1px rgba(16,185,129,0.35) inset; color: var(--accent); }
+
+/* Tabs: subtle glow on active */
+.tab-accent { background: rgba(16,185,129,0.10); color: var(--accent); border: 1px solid transparent; border-radius: 9999px; }
+.tab-accent-active { background: rgba(16,185,129,0.15); color: var(--accent); box-shadow: 0 0 0 1px var(--accent-glow) inset; border-radius: 9999px; }
+@media (max-width: 640px) {
+  .tab-accent, .tab-accent-active { font-size: 12px; padding: 6px 10px; }
+}
+
+/* Animated fade-in */
+@keyframes fadeInCard { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInCard 300ms ease-out; }
+
+/* Pulsing glow for positive totals */
+@keyframes neonPulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.0); } 50% { box-shadow: 0 0 24px 0 rgba(16,185,129,0.35); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.0); } }
+.glow-pulse { animation: neonPulse 1800ms ease-in-out infinite; }
+
+/* Progress bars (accent) */
+.progress-track { background: rgba(16,185,129,0.08); border-radius: 8px; }
+.progress-accent { background: rgba(16,185,129,0.35); height: 8px; border-radius: 8px; }
+
+/* New semantic utility tokens for theme */
+.text-text-secondary { color: var(--text-secondary); }
+.text-accent-green { color: var(--accent); }
+.border-border { border-color: var(--border); }
+.bg-app-base { background: var(--bg-deep); }
+.sidebar-premium { background: var(--bg-deep); border-right: 1px solid var(--border); }
+.header-premium { background: var(--bg-deep); border-bottom: 1px solid var(--border); }
+
+/* Subtle glow divider line */
+.divider-glow { border-top: 1px solid rgba(16,185,129,0.10); }
+
+/* Utility to hide scrollbars for horizontal tab scrollers */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

@@ -20,7 +20,7 @@ const Dashboard: React.FC = () => {
   const AUTOPILOT_RISK_PCT = Number((import.meta.env as any).VITE_AUTOPILOT_RISK_PCT ?? (import.meta.env as any).AUTOPILOT_RISK_PCT ?? 0.02);
   const windowName = schedulerActivity?.window ?? 'none';
   const autopilotActive = AUTOPILOT_ENABLED && windowName !== 'none';
-  const autopilotLabel = AUTOPILOT_ENABLED ? (windowName !== 'none' ? `Enabled (${windowName})` : 'Disabled') : 'Disabled';
+  const autopilotLabel = AUTOPILOT_ENABLED ? (windowName !== 'none' ? 'ENABLED' : 'DISABLED') : 'DISABLED';
 
   const enabledStrategies = useMemo(() => strategies ? strategies.filter(s => s.enabled) : [], [strategies]);
 

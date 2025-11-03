@@ -3,8 +3,6 @@ import { useDatabase } from '../hooks/useDatabase';
 import { Position, PositionStatus, Strategy, LedgerEntry } from '../types';
 import SummaryBar, { TimeRange } from './SummaryBar';
 import BotCard from './BotCard';
-import TradesTable from './TradesTable';
-import LogsPanel from './LogsPanel';
 import { NavLink, useLocation, useSearchParams } from 'react-router-dom';
 
 export default function DashboardBase({ title, strategyFilter }: {
@@ -94,7 +92,7 @@ export default function DashboardBase({ title, strategyFilter }: {
   const MAX_TRADES_CAP = Number((import.meta.env as any).VITE_AUTOPILOT_MAX_TRADES_PER_SESSION ?? (import.meta.env as any).AUTOPILOT_MAX_TRADES_PER_SESSION ?? 5);
   const botMetrics = useMemo(() => {
     const list = filteredPositions;
-    const defs = strategyFilter ? botDefs.filter(d => d.id === 'trendatr') : botDefs;
+    const defs = botDefs; // Always show all strategies; instrument pages filter positions
     return defs.map(def => {
       const forBot = list.filter(def.match);
       const closedR = forBot.filter((p): p is Required<Position> => p.status === PositionStatus.CLOSED && p.pnl_gbp != null && inRange(p.exit_ts ?? p.ts));
@@ -111,20 +109,35 @@ export default function DashboardBase({ title, strategyFilter }: {
     });
   }, [filteredPositions, range]);
 
-  // Logs: filter messages by symbol tokens when strategyFilter provided
-  const logs = useMemo(() => {
-    const messages: string[] = (schedulerActivity?.messages ?? []);
-    if (!expandedTokens) return messages.slice(-20);
-    const lower = expandedTokens;
-    return messages.filter(m => {
-      const mm = m.toLowerCase();
-      return lower.some(t => mm.includes(t));
-    }).slice(-20);
-  }, [schedulerActivity, expandedTokens]);
+  // Instrument overview metrics for Overview page
+  const instrumentTokens = {
+    gold: ['gold', 'xau', 'xauusd', 'oanda:xauusd'],
+    nas100: ['nas', 'nas100', 'us100', 'nas100_usd', 'oanda:nas100_usd'],
+  } as const;
+
+  const getInstrumentMetrics = (tokens: readonly string[]) => {
+    const list = (positions ?? []).filter(p => {
+      const text = `${p.strategy_id ?? ''} ${p.method_name ?? ''} ${p.symbol ?? ''}`.toLowerCase();
+      return tokens.some(t => text.includes(t));
+    });
+    const closedR = list.filter((p): p is Required<Position> => p.status === PositionStatus.CLOSED && p.pnl_gbp != null && inRange(p.exit_ts ?? p.ts));
+    const tradesTodayInst = list.filter(p => inRange(p.entry_ts ?? p.ts)).length;
+    const winsInst = closedR.filter(p => (p.pnl_gbp ?? 0) > 0).length;
+    const lossesInst = closedR.filter(p => (p.pnl_gbp ?? 0) < 0).length;
+    const totalPnlInst = closedR.reduce((a, p) => a + (p.pnl_gbp ?? 0), 0);
+    const avgRInst = closedR.length ? closedR.reduce((a, p) => a + (p.R_multiple ?? 0), 0) / closedR.length : 0;
+    const winRateInst = closedR.length ? (winsInst / closedR.length) * 100 : 0;
+    return { tradesToday: tradesTodayInst, wins: winsInst, losses: lossesInst, winRate: winRateInst, avgR: avgRInst, pnl: totalPnlInst };
+  };
+
+  const goldMetrics = useMemo(() => getInstrumentMetrics(instrumentTokens.gold), [positions, range]);
+  const nasMetrics = useMemo(() => getInstrumentMetrics(instrumentTokens.nas100), [positions, range]);
+
+  // Logs removed per request
 
   const AUTOPILOT_ENABLED = (import.meta.env.VITE_AUTOPILOT_ENABLED === '1' || import.meta.env.VITE_AUTOPILOT_ENABLED === 'true');
   const windowName = schedulerActivity?.window ?? 'none';
-  const autopilotLabel = AUTOPILOT_ENABLED ? (windowName !== 'none' ? `Enabled (${windowName})` : 'Disabled') : 'Disabled';
+  const autopilotLabel = AUTOPILOT_ENABLED ? (windowName !== 'none' ? 'ENABLED' : 'DISABLED') : 'DISABLED';
 
   const location = useLocation();
 
@@ -138,10 +151,10 @@ export default function DashboardBase({ title, strategyFilter }: {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-white">{title === 'Overview' ? 'Dashboard' : `Dashboard — ${title}`}</h2>
-          <div className="mt-3 flex gap-2 text-sm">
-            <NavLink to="/dashboard/overview" className={({ isActive }) => `px-3 py-1 rounded ${isActive ? 'bg-primary/20 text-white ring-1 ring-primary/30' : 'bg-white/10 text-gray-300 hover:text-white'}`}>Overview</NavLink>
-            <NavLink to="/dashboard/gold" className={({ isActive }) => `px-3 py-1 rounded ${isActive ? 'bg-primary/20 text-white ring-1 ring-primary/30' : 'bg-white/10 text-gray-300 hover:text-white'}`}>Gold</NavLink>
-            <NavLink to="/dashboard/nas100" className={({ isActive }) => `px-3 py-1 rounded ${isActive ? 'bg-primary/20 text-white ring-1 ring-primary/30' : 'bg-white/10 text-gray-300 hover:text-white'}`}>NAS100</NavLink>
+          <div className="mt-3 flex gap-2 text-sm overflow-x-auto no-scrollbar -mx-1 px-1">
+            <NavLink to="/dashboard/overview" className={({ isActive }) => `px-3 py-1.5 rounded-full border border-transparent ${isActive ? 'tab-accent-active' : 'tab-accent'} hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green`}>Overview</NavLink>
+            <NavLink to="/dashboard/gold" className={({ isActive }) => `px-3 py-1.5 rounded-full border border-transparent ${isActive ? 'tab-accent-active' : 'tab-accent'} hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green`}>Gold</NavLink>
+            <NavLink to="/dashboard/nas100" className={({ isActive }) => `px-3 py-1.5 rounded-full border border-transparent ${isActive ? 'tab-accent-active' : 'tab-accent'} hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green`}>NAS100</NavLink>
           </div>
         </div>
       </div>
@@ -149,21 +162,84 @@ export default function DashboardBase({ title, strategyFilter }: {
       {/* Summary */}
       <SummaryBar tradesToday={tradesToday} totalPnl={totalPnl} winRate={winRate} profitFactor={profitFactor} avgR={avgR} windowStatus={autopilotLabel} range={range} onRangeChange={setRange} ledger={ledger ?? []} />
 
-      {/* Bot Cards */}
-      <div className="card-premium p-5 sm:p-6 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold text-white mb-4">{strategyFilter ? 'Bot (Filtered)' : 'Bots Overview'}</h3>
-        <div className={`grid grid-cols-1 ${strategyFilter ? 'md:grid-cols-1' : 'md:grid-cols-3'} gap-4`}>
-          {botMetrics.map(b => (
-            <BotCard key={b.id} {...b} />
-          ))}
+      {/* Bot / Instrument Cards */}
+      {!strategyFilter ? (
+        <div className="card-premium p-6 fade-in">
+          <h3 className="text-lg font-semibold tracking-tight mb-4">Instruments Overview</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Gold */}
+            <div className="card-premium p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_4px_var(--accent-glow)]"></span>
+                  <h4 className="text-base font-semibold">Gold</h4>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full border border-border text-text-secondary">{autopilotLabel}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Trades Today</p>
+                  <p className="font-mono text-white text-2xl font-bold">{goldMetrics.tradesToday}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Win Rate</p>
+                  <p className="font-mono text-white text-2xl font-bold">{goldMetrics.winRate.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Wins / Losses</p>
+                  <p className="font-mono text-2xl font-bold"><span className="text-accent-green">{goldMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{goldMetrics.losses}</span></p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">P&L</p>
+                  <p className={`font-mono text-2xl font-bold ${goldMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{goldMetrics.pnl.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* NAS100 */}
+            <div className="card-premium p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_4px_var(--accent-glow)]"></span>
+                  <h4 className="text-base font-semibold">NAS100</h4>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full border border-border text-text-secondary">{autopilotLabel}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Trades Today</p>
+                  <p className="font-mono text-white text-2xl font-bold">{nasMetrics.tradesToday}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Win Rate</p>
+                  <p className="font-mono text-white text-2xl font-bold">{nasMetrics.winRate.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Wins / Losses</p>
+                  <p className="font-mono text-2xl font-bold"><span className="text-accent-green">{nasMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{nasMetrics.losses}</span></p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">P&L</p>
+                  <p className={`font-mono text-2xl font-bold ${nasMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{nasMetrics.pnl.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="card-premium p-5 sm:p-6 rounded-lg shadow-lg">
+          <h3 className="text-lg font-semibold text-white mb-4">Bot (Filtered)</h3>
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-4`}>
+            {botMetrics.map(b => (
+              <BotCard key={b.id} {...b} />
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* Recent Trades */}
-      <TradesTable positions={closedInRange} />
+      {/* Recent Trades removed per request */}
 
-      {/* Logs */}
-      <LogsPanel logs={logs} />
+      {/* Scheduler Logs removed per request */}
     </div>
   );
 }
