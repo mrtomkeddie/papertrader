@@ -180,7 +180,7 @@ const Dashboard: React.FC = () => {
       {/* Account Summary */}
       <div className="card-premium p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Account Summary</h3>
-        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
           {/* Row 1: Account Balance (left) | Win Rate (right) */}
           <div>
             <p className="text-xs sm:text-sm text-gray-400 mb-1">Account Balance</p>
