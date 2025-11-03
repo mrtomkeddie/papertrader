@@ -19,12 +19,7 @@ import { Explanation } from './types';
 import { ListIcon as MenuIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
-  // Dev-only bypass to make preview accessible without Google auth
-  const devBypass = Boolean((import.meta as any).env?.DEV) && (
-    ((import.meta as any).env?.VITE_DEV_BYPASS_AUTH ?? '') === '1' ||
-    String((import.meta as any).env?.VITE_DEV_BYPASS_AUTH ?? '').toLowerCase() === 'true'
-  );
-  const [isAuthed, setIsAuthed] = useState<boolean>(devBypass || !!auth?.currentUser);
+  const [isAuthed, setIsAuthed] = useState<boolean>(!!auth?.currentUser);
   const setupMissing = !auth;
   const [authError, setAuthError] = useState<string | null>(null);
   // Render-state debug to track which branch is active
@@ -32,7 +27,7 @@ const App: React.FC = () => {
     console.log('[render] App', { setupMissing, isAuthed, user: auth?.currentUser?.uid ?? null });
   } catch {}
   useEffect(() => {
-    if (!auth || devBypass) return;
+    if (!auth) return;
     const unsub = onAuthStateChanged(auth, (user) => {
       setIsAuthed(!!user);
       if (user) {
@@ -94,11 +89,7 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      {Boolean((import.meta as any).env?.DEV) && (
-        <div style={{position:'fixed',top:8,left:8,zIndex:99999,background:'rgba(16,185,129,0.12)',border:'1px solid rgba(16,185,129,0.22)',padding:'6px 10px',borderRadius:8,color:'#10B981',fontFamily:'Inter,system-ui,sans-serif',fontSize:12}}>
-          UI debug — setupMissing: {String(setupMissing)} · isAuthed: {String(isAuthed)} · env: apiKey:{String(Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY))} authDom:{String(Boolean((import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN))} proj:{String(Boolean((import.meta as any).env?.VITE_FIREBASE_PROJECT_ID))}
-        </div>
-      )}
+      {/* Dev overlay removed per request */}
       {setupMissing ? (
         <div className="min-h-screen flex items-center justify-center bg-black text-gray-200">
           <div className="card-premium p-6 rounded-xl shadow-lg max-w-lg">
