@@ -190,19 +190,19 @@ export default function DashboardBase({ title, strategyFilter }: {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[11px] tracking-wide text-text-secondary mb-1">Trades Today</p>
-                  <p className="font-mono text-white text-3xl font-semibold">{goldMetrics.tradesToday}</p>
+                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight text-white">{goldMetrics.tradesToday}</p>
                 </div>
                 <div>
                   <p className="text-[11px] tracking-wide text-text-secondary mb-1">Win Rate</p>
-                  <p className="font-mono text-white text-3xl font-semibold">{goldMetrics.winRate.toFixed(1)}%</p>
+                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight text-white">{goldMetrics.winRate.toFixed(1)}%</p>
                 </div>
                 <div>
                   <p className="text-[11px] tracking-wide text-text-secondary mb-1">Wins / Losses</p>
-                  <p className="font-mono text-3xl font-semibold"><span className="text-accent-green">{goldMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{goldMetrics.losses}</span></p>
+                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight"><span className="text-accent-green">{goldMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{goldMetrics.losses}</span></p>
                 </div>
                 <div>
                   <p className="text-[11px] tracking-wide text-text-secondary mb-1">P&L</p>
-                  <p className={`font-mono text-3xl font-semibold ${goldMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{goldMetrics.pnl.toFixed(2)}</p>
+                  <p className={`text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${goldMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{goldMetrics.pnl.toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -219,19 +219,19 @@ export default function DashboardBase({ title, strategyFilter }: {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[11px] tracking-wide text-text-secondary mb-1">Trades Today</p>
-                  <p className="font-mono text-white text-3xl font-semibold">{nasMetrics.tradesToday}</p>
+                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight text-white">{nasMetrics.tradesToday}</p>
                 </div>
                 <div>
                   <p className="text-[11px] tracking-wide text-text-secondary mb-1">Win Rate</p>
-                  <p className="font-mono text-white text-3xl font-semibold">{nasMetrics.winRate.toFixed(1)}%</p>
+                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight text-white">{nasMetrics.winRate.toFixed(1)}%</p>
                 </div>
                 <div>
                   <p className="text-[11px] tracking-wide text-text-secondary mb-1">Wins / Losses</p>
-                  <p className="font-mono text-3xl font-semibold"><span className="text-accent-green">{nasMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{nasMetrics.losses}</span></p>
+                  <p className="text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight"><span className="text-accent-green">{nasMetrics.wins}</span> <span className="text-text-secondary">/</span> <span className="text-red-400">{nasMetrics.losses}</span></p>
                 </div>
                 <div>
                   <p className="text-[11px] tracking-wide text-text-secondary mb-1">P&L</p>
-                  <p className={`font-mono text-3xl font-semibold ${nasMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{nasMetrics.pnl.toFixed(2)}</p>
+                  <p className={`text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${nasMetrics.pnl >= 0 ? 'text-accent-green' : 'text-red-400'}`}>£{nasMetrics.pnl.toFixed(2)}</p>
                 </div>
               </div>
             </div>

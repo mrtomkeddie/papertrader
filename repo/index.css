@@ -147,7 +147,7 @@ body {
 }
 
 /* Icon chip and active badge styles */
-.icon-chip { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; }
+.icon-chip { background: transparent; border: none; border-radius: 10px; }
 .badge-active { background: rgba(255,255,255,0.06); color: #e5e7eb; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 2px 8px; }
 
 /* Donut ring animation + glow */
@@ -175,23 +175,13 @@ body {
 
 /* Sidebar nav active: neutral glass pill */
 .nav-active {
-  /* Pill-shaped outline without fill */
-  background: transparent !important;
+  background: transparent; /* outline-only pill */
   color: var(--text-primary);
-  border: 2px solid rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.18);
   border-radius: 9999px; /* pill shape */
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset; /* subtle inner ring */
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset; /* subtle inner ring */
 }
-.nav-active .icon-chip {
-  /* Remove inner chip box so the pill outline is the focus */
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-.nav-ring {
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset; /* subtle ring */
-  color: var(--text-primary);
-}
+.nav-ring { box-shadow: none; }
 
 /* Tabs: subtle glow on active */
 .tab-accent { background: rgba(16,185,129,0.08); color: var(--accent); border: 1px solid transparent; border-radius: 9999px; }
@@ -207,9 +197,10 @@ body {
 .segmented-item:hover { color: var(--text-primary); }
 .segmented-item[data-active="true"] {
   color: var(--text-primary);
-  background: rgba(255,255,255,0.10);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset, 0 8px 24px rgba(0,0,0,0.35);
-  backdrop-filter: saturate(120%) blur(6px);
+  background: transparent; /* outline-only active tab */
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset; /* subtle inner ring */
+  backdrop-filter: saturate(120%);
 }
 
 @media (max-width: 640px) {
