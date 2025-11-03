@@ -82,6 +82,7 @@ async function fetchYahooIntraday(symbolYahoo: string, intervalTf: string = '15m
 export async function fetchOHLC(symbol: string, interval: string = '1h', limit: number = 100): Promise<OhlcData[]> {
   // Route data source based on symbol
   const isGold = /XAUUSD/i.test(symbol);
+  const isNas100 = /NAS100/i.test(symbol);
   if (isGold) {
     try {
       const y = await fetchYahooIntraday('XAUUSD=X', interval, '5d');
@@ -120,6 +121,32 @@ export async function fetchOHLC(symbol: string, interval: string = '1h', limit: 
         }
         return candles;
       }
+    }
+  } else if (isNas100) {
+    try {
+      // NAS100 via Yahoo Finance: NASDAQ-100 index (^NDX) intraday
+      const y = await fetchYahooIntraday('^NDX', interval, '5d');
+      if (!y.length) {
+        throw new Error('Yahoo returned empty dataset for NAS100');
+      }
+      if (limit && y.length > limit) return y.slice(-limit);
+      return y;
+    } catch {
+      // Synthetic fallback for NAS100 when Yahoo is unavailable or empty
+      const now = Math.floor(Date.now() / 1000);
+      const base = 18000; // rough NAS100 level anchor
+      const candles: OhlcData[] = [];
+      const step = interval.toLowerCase() === '15m' ? 900 : interval.toLowerCase() === '30m' ? 1800 : 3600;
+      for (let i = limit - 1; i >= 0; i--) {
+        const t = now - i * step;
+        const drift = Math.sin(i / 10) * 60;
+        const open = base + drift + (Math.random() - 0.5) * 40;
+        const close = base + drift + (Math.random() - 0.5) * 40;
+        const high = Math.max(open, close) + Math.random() * 35;
+        const low = Math.min(open, close) - Math.random() * 35;
+        candles.push({ time: t, open, high, low, close, volume: 0 });
+      }
+      return candles;
     }
   } else {
     try {

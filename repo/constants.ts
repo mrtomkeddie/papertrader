@@ -15,16 +15,20 @@ export const POPULAR_MARKETS = [
   { symbol: 'FX:EURUSD', description: 'Euro / US Dollar', category: 'Forex' },
   // Metals (Gold)
   { symbol: 'OANDA:XAUUSD', description: 'Gold / US Dollar', category: 'Metals' },
+  // Indices (NAS100)
+  { symbol: 'OANDA:NAS100_USD', description: 'NASDAQ 100 / US Dollar', category: 'Index' },
 ];
 
 export const SELECTED_INSTRUMENTS = [
   // Single, focused universe
   { symbol: 'OANDA:XAUUSD', description: 'Gold / US Dollar', category: 'Metals' },
+  { symbol: 'OANDA:NAS100_USD', description: 'NASDAQ 100 / US Dollar', category: 'Index' },
 ];
 
 export const TIMEFRAME_BY_SYMBOL: Record<string, string> = {
   'FX:EURUSD': '1h',
   'OANDA:XAUUSD': '15m',
+  'OANDA:NAS100_USD': '15m',
 };
 
 export const SELECTED_METHODS = [

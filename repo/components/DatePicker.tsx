@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 interface DatePickerProps {
   label?: string;
@@ -35,12 +36,17 @@ export const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange, 
   const [viewYear, setViewYear] = React.useState<number>(selected ? selected.getFullYear() : new Date().getFullYear());
   const [viewMonth, setViewMonth] = React.useState<number>(selected ? selected.getMonth() : new Date().getMonth());
   const ref = React.useRef<HTMLDivElement|null>(null);
+  const popupRef = React.useRef<HTMLDivElement|null>(null);
   const [alignRight, setAlignRight] = React.useState(false);
+  const [popupLeft, setPopupLeft] = React.useState<number>(0);
+  const [popupTop, setPopupTop] = React.useState<number>(0);
 
   React.useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (!ref.current) return;
-      if (!ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (ref.current && ref.current.contains(target)) return;
+      if (popupRef.current && popupRef.current.contains(target)) return;
+      setOpen(false);
     }
     if (open) {
       document.addEventListener('mousedown', onDocClick);
@@ -54,7 +60,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange, 
     if (open && ref.current) {
       const rect = ref.current.getBoundingClientRect();
       const calendarWidth = 256; // w-64
-      setAlignRight(rect.left + calendarWidth > window.innerWidth);
+      const align = rect.left + calendarWidth > window.innerWidth;
+      setAlignRight(align);
+      const left = align ? Math.max(8, rect.right - calendarWidth) : Math.max(8, rect.left);
+      const top = Math.min(window.innerHeight - 8, rect.bottom + 8);
+      setPopupLeft(left);
+      setPopupTop(top);
     }
   }, [open]);
 
@@ -80,8 +91,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange, 
         </div>
       </button>
 
-      {open && (
-        <div className={`absolute z-50 mt-2 ${alignRight ? 'right-0' : 'left-0'} w-64 max-w-[calc(100vw-2rem)] card-premium rounded-lg shadow-xl`}>
+      {open && createPortal(
+        <div ref={popupRef} style={{ position: 'fixed', left: popupLeft, top: popupTop }} className="z-[1000] w-64 max-w-[calc(100vw-2rem)] card-premium rounded-lg shadow-xl">
           <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
             <button className="p-1 text-gray-300 hover:text-white" onClick={() => setViewMonth(m => { const nm = m-1; if (nm < 0) { setViewYear(y => y-1); return 11; } return nm; })} aria-label="Previous month">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -114,8 +125,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({ label, value, onChange, 
             <button className="text-xs text-gray-300 hover:text-white" onClick={() => { const t = new Date(); onChange(`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`); setOpen(false); }}>Today</button>
             <button className="text-xs text-gray-300 hover:text-white" onClick={() => { onChange(''); setOpen(false); }}>Clear</button>
           </div>
-        </div>
-      )}
+        </div>, document.body)
+      }
     </div>
   );
 };

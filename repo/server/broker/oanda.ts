@@ -18,7 +18,9 @@ export const mapOandaSymbol = (symbol: string): string => {
   if (s.includes('XAUUSD')) return 'XAU_USD';
   if (s.startsWith('OANDA:')) {
     const p = s.split(':')[1];
+    if (p.includes('_')) return p; // e.g., NAS100_USD
     if (p.length === 6) return `${p.slice(0,3)}_${p.slice(3,6)}`;
+    return p; // fallback: drop prefix, pass through (e.g., NAS100)
   }
   if (s.startsWith('FX:')) {
     const p = s.split(':')[1];

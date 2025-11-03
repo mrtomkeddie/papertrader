@@ -28,41 +28,61 @@ const SummaryBar: React.FC<SummaryBarProps> = ({
   ledger,
 }) => {
   return (
-    <div className="card-premium p-5 sm:p-6 rounded-lg shadow-lg">
+    <div className="card-premium p-5 sm:p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Account Summary</h3>
+        <h3 className="text-lg font-semibold tracking-tight">Account Summary</h3>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">Window</span>
-          <span className="px-2 py-1 rounded bg-gray-800 text-xs text-gray-200">{windowStatus}</span>
+          <span className="text-xs uppercase tracking-wide text-text-secondary">Window</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-border text-text-secondary">{windowStatus}</span>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <button onClick={() => onRangeChange('today')} className={`px-3 py-1 rounded text-xs ${range==='today'?'bg-gray-700 text-white':'bg-gray-800 text-gray-300'}`}>Today</button>
-        <button onClick={() => onRangeChange('week')} className={`px-3 py-1 rounded text-xs ${range==='week'?'bg-gray-700 text-white':'bg-gray-800 text-gray-300'}`}>This Week</button>
-        <button onClick={() => onRangeChange('all')} className={`px-3 py-1 rounded text-xs ${range==='all'?'bg-gray-700 text-white':'bg-gray-800 text-gray-300'}`}>All Time</button>
+      <div className="divider-glow my-4" />
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onRangeChange('today')}
+          data-active={range==='today'}
+          className="px-3 py-1.5 text-sm rounded-full border border-transparent text-text-secondary hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green data-[active=true]:bg-[rgba(16,185,129,0.15)] data-[active=true]:text-accent-green"
+        >
+          Today
+        </button>
+        <button
+          onClick={() => onRangeChange('week')}
+          data-active={range==='week'}
+          className="px-3 py-1.5 text-sm rounded-full border border-transparent text-text-secondary hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green data-[active=true]:bg-[rgba(16,185,129,0.15)] data-[active=true]:text-accent-green"
+        >
+          This Week
+        </button>
+        <button
+          onClick={() => onRangeChange('all')}
+          data-active={range==='all'}
+          className="px-3 py-1.5 text-sm rounded-full border border-transparent text-text-secondary hover:bg-[rgba(16,185,129,0.10)] hover:text-accent-green data-[active=true]:bg-[rgba(16,185,129,0.15)] data-[active=true]:text-accent-green"
+        >
+          All Time
+        </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-300">
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-5 sm:gap-6">
         <div>
-          <p className="text-gray-400">Trades Today</p>
-          <p className="font-mono text-xl">{tradesToday}</p>
+          <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Trades Today</p>
+          <p className="font-mono text-xl sm:text-2xl font-bold text-white">{tradesToday}</p>
         </div>
         <div>
-          <p className="text-gray-400">Total P&L</p>
-          <p className={`font-mono text-xl ${totalPnl >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{totalPnl.toFixed(2)}</p>
+          <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Total P&L</p>
+          <p className={`font-mono text-xl sm:text-2xl font-bold ${totalPnl > 0 ? 'text-accent-green' : totalPnl < 0 ? 'text-red-400' : 'text-text-secondary'}`}>£{totalPnl.toFixed(2)}</p>
         </div>
         <div>
-          <p className="text-gray-400">Win Rate</p>
-          <p className="font-mono text-xl">{winRate.toFixed(1)}%</p>
+          <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Win Rate</p>
+          <p className="font-mono text-xl sm:text-2xl font-bold text-white">{winRate.toFixed(1)}%</p>
         </div>
         <div>
-          <p className="text-gray-400">Profit Factor</p>
-          <p className="font-mono text-xl">{profitFactor > 0 ? profitFactor.toFixed(2) : '—'}</p>
+          <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Profit Factor</p>
+          <p className="font-mono text-xl sm:text-2xl font-bold text-white">{profitFactor > 0 ? profitFactor.toFixed(2) : '—'}</p>
         </div>
         <div>
-          <p className="text-gray-400">Risk-Reward (avg)</p>
-          <p className="font-mono text-xl">{avgR.toFixed(2)}</p>
+          <p className="text-xs uppercase tracking-wide text-text-secondary mb-1">Risk-Reward (avg)</p>
+          <p className="font-mono text-xl sm:text-2xl font-bold text-white">{avgR.toFixed(2)}</p>
         </div>
       </div>
 

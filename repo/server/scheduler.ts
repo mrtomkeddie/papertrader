@@ -6,6 +6,9 @@ import { fetchOHLCV } from '../services/dataService';
 import { trendAtrBot } from '../bots/trendAtr';
 import { orbBot } from '../bots/orb';
 import { vwapBot } from '../bots/vwapReversion';
+import { trendAtrBotNas } from '../bots/trendAtrNas';
+import { orbBotNas } from '../bots/orbNas';
+import { vwapBotNas } from '../bots/vwapReversionNas';
 import { executeAiTrade, runPriceCheckAdmin } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
@@ -95,7 +98,8 @@ async function shouldSkipStrategy(strategyName: string, symbol: string): Promise
 async function tick() {
   const windowName = getWindowName();
   const msgs: string[] = [];
-  const bots = [trendAtrBot, orbBot, vwapBot];
+  const botsXau = [trendAtrBot, orbBot, vwapBot];
+  const botsNas = [trendAtrBotNas, orbBotNas, vwapBotNas];
 
   if (!enabled) {
     msgs.push('Scheduler disabled');
@@ -131,7 +135,7 @@ async function tick() {
       window: windowName,
       ops_found: 0,
       trades_placed: 0,
-      universe_symbols: ['OANDA:XAUUSD'],
+      universe_symbols: ['OANDA:XAUUSD', 'OANDA:NAS100_USD'],
       messages: msgs,
     });
     return;
@@ -151,32 +155,37 @@ async function tick() {
     vwapReversion: capVwapReversion,
   };
   const placedByBot: Record<string, number> = {};
-  for (const bot of bots) {
+  const uniqueBotIds = Array.from(new Set([...botsXau, ...botsNas].map(b => b.id)));
+  for (const bid of uniqueBotIds) {
     try {
-      placedByBot[bot.id] = await db.countPositionsPlacedTodayByStrategy(bot.id);
+      placedByBot[bid] = await db.countPositionsPlacedTodayByStrategy(bid);
     } catch (err) {
-      placedByBot[bot.id] = 0;
-      console.warn(`[Scheduler] Could not count positions placed today for ${bot.id}:`, err);
+      placedByBot[bid] = 0;
+      console.warn(`[Scheduler] Could not count positions placed today for ${bid}:`, err);
     }
   }
-  for (const bot of bots) {
-    try {
-      // Env-driven enable override: if explicitly disabled, skip
-      const envEnabled = envEnableByBot[bot.id];
-      if (envEnabled === false) { msgs.push(`skip: bot disabled via env [${bot.id}]`); continue; }
-      // If not explicitly enabled/disabled via env, fall back to bot.isEnabled()
-      if (envEnabled === undefined && !bot.isEnabled()) { msgs.push(`bot ${bot.id} disabled`); continue; }
-      const now = new Date();
-      if (!bot.isWindowOpen(now)) { msgs.push(`bot ${bot.id} window closed`); continue; }
-      const signals = await bot.scan();
-      const trades = bot.selectSignals(signals);
-      for (const trade of trades) {
-        ops.push({ symbol: 'OANDA:XAUUSD', action: { action: 'TRADE', trade }, extra: { botId: bot.id } as any });
+  const symbolBots: { symbol: string; bots: typeof botsXau }[] = [
+    { symbol: 'OANDA:XAUUSD', bots: botsXau },
+    { symbol: 'OANDA:NAS100_USD', bots: botsNas },
+  ];
+  for (const { symbol, bots } of symbolBots) {
+    for (const bot of bots) {
+      try {
+        const envEnabled = envEnableByBot[bot.id];
+        if (envEnabled === false) { msgs.push(`skip: bot disabled via env [${bot.id}]`); continue; }
+        if (envEnabled === undefined && !bot.isEnabled()) { msgs.push(`bot ${bot.id} disabled`); continue; }
+        const now = new Date();
+        if (!bot.isWindowOpen(now)) { msgs.push(`bot ${bot.id} window closed`); continue; }
+        const signals = await bot.scan();
+        const trades = bot.selectSignals(signals);
+        for (const trade of trades) {
+          ops.push({ symbol, action: { action: 'TRADE', trade }, extra: { botId: bot.id } as any });
+        }
+        if (trades.length === 0) msgs.push(`bot ${bot.id} (${symbol}): no trades`);
+      } catch (e) {
+        msgs.push(`Scan error for bot ${bot.id} (${symbol})`);
+        console.warn('[Scheduler] Scan error for bot', bot.id, symbol, e);
       }
-      if (trades.length === 0) msgs.push(`bot ${bot.id}: no trades`);
-    } catch (e) {
-      msgs.push(`Scan error for bot ${bot.id}`);
-      console.warn('[Scheduler] Scan error for bot', bot.id, e);
     }
   }
 
@@ -235,7 +244,7 @@ async function tick() {
     window: windowName,
     ops_found: ops.length,
     trades_placed: placed,
-    universe_symbols: ['OANDA:XAUUSD'],
+    universe_symbols: ['OANDA:XAUUSD', 'OANDA:NAS100_USD'],
     messages: msgs,
   });
 }
