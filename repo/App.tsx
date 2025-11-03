@@ -94,6 +94,11 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
+      {Boolean((import.meta as any).env?.DEV) && (
+        <div style={{position:'fixed',top:8,left:8,zIndex:99999,background:'rgba(16,185,129,0.12)',border:'1px solid rgba(16,185,129,0.22)',padding:'6px 10px',borderRadius:8,color:'#10B981',fontFamily:'Inter,system-ui,sans-serif',fontSize:12}}>
+          UI debug — setupMissing: {String(setupMissing)} · isAuthed: {String(isAuthed)}
+        </div>
+      )}
       {setupMissing ? (
         <div className="min-h-screen flex items-center justify-center bg-black text-gray-200">
           <div className="card-premium p-6 rounded-xl shadow-lg max-w-lg">
