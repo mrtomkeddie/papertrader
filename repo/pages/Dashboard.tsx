@@ -180,26 +180,27 @@ const Dashboard: React.FC = () => {
       {/* Account Summary */}
       <div className="card-premium p-4 sm:p-6 rounded-lg sm:rounded-xl shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Account Summary</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+          {/* Row 1: Account Balance (left) | Win Rate (right) */}
           <div>
             <p className="text-xs sm:text-sm text-gray-400 mb-1">Account Balance</p>
             <p className="text-xl sm:text-3xl font-semibold text-white font-mono whitespace-nowrap tracking-tight leading-tight">£{accountBalance.toFixed(2)}</p>
             <p className="text-[11px] sm:text-xs text-gray-500">Base £{baseAccountGbp.toFixed(0)}</p>
           </div>
+          <div className="text-right sm:text-left">
+            <p className="text-xs sm:text-sm text-gray-400 mb-1">Win Rate</p>
+            <p className="text-xl sm:text-3xl font-semibold text-white font-mono whitespace-nowrap tracking-tight leading-tight">{winLoss.winRate.toFixed(1)}%</p>
+          </div>
+
+          {/* Row 2: Total P&L (left) | Wins/Losses (right) */}
           <div>
             <p className="text-xs sm:text-sm text-gray-400 mb-1">Total P&L</p>
             <p className={`text-xl sm:text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight ${latestCashAfter >= 0 ? 'text-green-300' : 'text-red-300'}`}>£{latestCashAfter.toFixed(2)}</p>
             <p className="text-[11px] sm:text-xs text-gray-500">All-time realized</p>
           </div>
-        </div>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
-          <div>
-            <p className="text-xs sm:text-sm text-gray-400 mb-1">Win Rate</p>
-            <p className="text-sm sm:text-base font-semibold text-white font-mono">{winLoss.winRate.toFixed(1)}%</p>
-          </div>
-          <div>
+          <div className="text-right sm:text-left">
             <p className="text-xs sm:text-sm text-gray-400 mb-1">Wins / Losses</p>
-            <p className="text-sm sm:text-base font-semibold font-mono">
+            <p className="text-xl sm:text-3xl font-semibold font-mono whitespace-nowrap tracking-tight leading-tight">
               <span className="text-green-300">{winLoss.wins}</span>
               <span className="text-gray-400"> / </span>
               <span className="text-red-300">{winLoss.losses}</span>
