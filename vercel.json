@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "framework": "vite",
+  "installCommand": "cd repo && npm ci",
+  "buildCommand": "npm --prefix repo run build",
+  "devCommand": "npm --prefix repo run dev",
+  "outputDirectory": "repo/dist"
+}
