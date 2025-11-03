@@ -2,5 +2,6 @@ import React from 'react';
 import DashboardBase from '../ui/DashboardBase';
 
 export default function DashboardGold() {
-  return <DashboardBase title="Gold" strategyFilter={["trendAtr_xau"]} />;
+  // Show Gold strategies: ORB, Trend Pullback (ATR), VWAP Reversion
+  return <DashboardBase title="Gold" strategyFilter={["orb", "trendAtr_xau", "vwapReversion"]} />;
 }
