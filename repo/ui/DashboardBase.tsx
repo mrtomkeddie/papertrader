@@ -54,6 +54,8 @@ export default function DashboardBase({ title, strategyFilter }: {
   const [instrumentFilter, setInstrumentFilter] = React.useState<'all' | 'gold' | 'nas100'>('all');
   // Independent table range state
   const [tableRange, setTableRange] = React.useState<TimeRange>('today');
+  // Strategy filter for Recent Trades table
+  const [strategyFilterTable, setStrategyFilterTable] = React.useState<'all' | 'orb' | 'trend' | 'vwap'>('all');
   const inTableRange = (ts?: string | null) => {
     if (!ts) return false;
     const t = new Date(ts);
@@ -120,7 +122,14 @@ export default function DashboardBase({ title, strategyFilter }: {
           return tokens.some(t => text.includes(t));
         })
       : list;
-    const filtered = filteredByInst.filter(p => inTableRange(p.exit_ts ?? p.entry_ts ?? p.ts));
+    const filteredByStrategy = strategyFilterTable === 'all' ? filteredByInst : filteredByInst.filter(p => {
+      const text = `${p.strategy_id ?? ''} ${p.method_name ?? ''}`.toLowerCase();
+      if (strategyFilterTable === 'orb') return text.includes('orb');
+      if (strategyFilterTable === 'trend') return text.includes('trend');
+      if (strategyFilterTable === 'vwap') return text.includes('vwap');
+      return true;
+    });
+    const filtered = filteredByStrategy.filter(p => inTableRange(p.exit_ts ?? p.entry_ts ?? p.ts));
     return filtered
       .slice()
       .sort((a, b) => {
@@ -129,7 +138,7 @@ export default function DashboardBase({ title, strategyFilter }: {
         return tb - ta;
       })
       .slice(0, 20);
-  }, [positions, instrumentFilter, tableRange]);
+  }, [positions, instrumentFilter, strategyFilterTable, tableRange]);
 
   // Bot metrics (re-usable)
   const botDefs = [
@@ -246,6 +255,19 @@ export default function DashboardBase({ title, strategyFilter }: {
               </div>
               <div className="pill-dropdown">
                 <select
+                  aria-label="Strategy filter"
+                  className="pill-select compact"
+                  value={strategyFilterTable}
+                  onChange={e => setStrategyFilterTable(e.target.value as 'all' | 'orb' | 'trend' | 'vwap')}
+                >
+                  <option value="all">All Strategies</option>
+                  <option value="orb">ORB</option>
+                  <option value="trend">Trend Pullback</option>
+                  <option value="vwap">VWAP Reversion</option>
+                </select>
+              </div>
+              <div className="pill-dropdown">
+                <select
                   aria-label="Time range"
                   className="pill-select compact"
                   value={tableRange}
@@ -264,36 +286,26 @@ export default function DashboardBase({ title, strategyFilter }: {
                 <tr>
                   <th className="text-left">Date</th>
                   <th className="text-left">Symbol</th>
-                  <th className="text-left">Side</th>
-                  <th className="text-left">Strategy</th>
                   <th className="text-right">P&L (GBP)</th>
-                  <th className="text-right">R Multiple</th>
-                  <th className="text-left">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {recentTrades.map(p => {
                   const when = new Date(p.exit_ts ?? p.entry_ts ?? p.ts ?? 0);
                   const pnl = p.pnl_gbp ?? 0;
-                  const rMult = p.R_multiple ?? null;
-                  const sideLabel = p.side === Side.BUY ? 'Buy' : p.side === Side.SELL ? 'Sell' : (p.side || '').toString();
                   return (
                     <tr key={p.id || `${p.symbol}-${when.getTime()}`}
                         className="cursor-pointer hover:bg-elevation-2"
                         onClick={() => p.id && navigate(`/positions/${p.id}`)}>
                       <td>{when.toLocaleString()}</td>
                       <td className="uppercase">{p.symbol || '-'}</td>
-                      <td>{sideLabel}</td>
-                      <td>{p.strategy_id || p.method_name || '-'}</td>
                       <td className={`text-right ${pnl > 0 ? 'text-accent-green' : pnl < 0 ? 'text-red-300' : ''}`}>{pnl.toFixed(2)}</td>
-                      <td className="text-right">{rMult == null ? '-' : rMult.toFixed(2)}</td>
-                      <td>{p.status === PositionStatus.OPEN ? 'Open' : 'Closed'}</td>
                     </tr>
                   );
                 })}
                 {recentTrades.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="text-center text-gray-400 py-4">No trades found for selected filter.</td>
+                    <td colSpan={3} className="text-center text-gray-400 py-4">No trades found for selected filter.</td>
                   </tr>
                 )}
               </tbody>
