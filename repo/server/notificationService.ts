@@ -1,5 +1,23 @@
-import { adminDb } from './firebaseAdmin';
-import { getMessaging } from 'firebase-admin/messaging';
+let adminDb: any;
+let adminMessaging: any;
+const hasAdminCreds = Boolean(process.env.FIREBASE_ADMIN_CREDENTIALS_BASE64);
+if (hasAdminCreds) {
+  try {
+    const mod = await import('./firebaseAdmin');
+    adminDb = mod.adminDb;
+    const msgMod = await import('firebase-admin/messaging');
+    adminMessaging = msgMod.getMessaging();
+    console.log('[Notification] Admin messaging enabled');
+  } catch (e) {
+    adminDb = undefined;
+    adminMessaging = undefined;
+    console.warn('[Notification] Admin SDK/messaging unavailable; notifications disabled');
+  }
+} else {
+  adminDb = undefined;
+  adminMessaging = undefined;
+  console.log('[Notification] Admin credentials not provided; notifications disabled');
+}
 
 /**
  * Sends a push notification to a user when a trade is opened or closed
@@ -15,6 +33,10 @@ export const sendPushNotification = async (
   data: Record<string, string> = {}
 ): Promise<boolean> => {
   try {
+    if (!adminDb || !adminMessaging) {
+      console.log('[Notification] Skipped: Admin messaging not available');
+      return false;
+    }
     // Get the user's FCM token from Firestore
     const userDoc = await adminDb.collection('users').doc(userId).get();
     const userData = userDoc.data();
@@ -33,7 +55,7 @@ export const sendPushNotification = async (
       token: userData.fcmToken,
     };
 
-    await getMessaging().send(message);
+    await adminMessaging.send(message);
     console.log(`[Notification] Successfully sent notification to user ${userId}`);
     return true;
   } catch (error) {
@@ -54,6 +76,10 @@ export const sendPushNotificationToAll = async (
   data: Record<string, string> = {}
 ): Promise<number> => {
   try {
+    if (!adminDb || !adminMessaging) {
+      console.log('[Notification] Skipped broadcast: Admin messaging not available');
+      return 0;
+    }
     // Get all users with FCM tokens
     const usersSnapshot = await adminDb.collection('users').get();
     const tokens: string[] = [];
@@ -80,7 +106,7 @@ export const sendPushNotificationToAll = async (
         data,
         token,
       };
-      return getMessaging().send(message);
+      return adminMessaging.send(message);
     });
 
     await Promise.all(sendPromises);

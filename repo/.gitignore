@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Local-only environment overrides (do not commit secrets)
+.env.local.user
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
 # Temp credentials/runtime files
 .tmp/
 

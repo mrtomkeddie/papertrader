@@ -4,15 +4,29 @@ import { initializeFirestore, setLogLevel } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getMessaging } from 'firebase/messaging';
 
-// Read env directly from Vite at build/runtime
+// Read env in both browser (Vite) and Node (process.env)
+function resolveEnv(key: string): string | undefined {
+  try {
+    const pe = (typeof process !== 'undefined' && (process as any)?.env) ? (process as any).env : {};
+    const ve = (import.meta as any)?.env;
+    return pe[`VITE_${key}`] || pe[key] || ve?.[`VITE_${key}`];
+  } catch {
+    try {
+      const ve = (import.meta as any)?.env;
+      return ve?.[`VITE_${key}`];
+    } catch {
+      return undefined;
+    }
+  }
+}
 
 const firebaseConfig = {
-  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY,
-  authDomain: (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: (import.meta as any).env?.VITE_FIREBASE_APP_ID,
+  apiKey: resolveEnv('FIREBASE_API_KEY'),
+  authDomain: resolveEnv('FIREBASE_AUTH_DOMAIN'),
+  projectId: resolveEnv('FIREBASE_PROJECT_ID'),
+  storageBucket: resolveEnv('FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: resolveEnv('FIREBASE_MESSAGING_SENDER_ID'),
+  appId: resolveEnv('FIREBASE_APP_ID'),
 };
 // Debug: log presence of required keys (not values) to aid setup verification
 try {
@@ -36,19 +50,23 @@ try {
   app = initializeApp(firebaseConfig);
   setLogLevel('error');
   dbInstance = initializeFirestore(app, { experimentalForceLongPolling: true });
-  try {
-    messagingInstance = getMessaging(app);
-  } catch (e) {
-    console.warn('[firebase] Messaging initialization skipped (unsupported environment):', e instanceof Error ? e.message : String(e));
-  }
-  authInstance = getAuth(app);
-  onAuthStateChanged(authInstance, (user) => {
-    if (user) {
-      console.log('[auth] User:', { uid: user.uid, isAnonymous: user.isAnonymous, providerData: user.providerData?.map(p => p.providerId) });
-    } else {
-      console.log('[auth] No user');
+  // Skip Messaging and Auth in Node/server contexts
+  const isNode = typeof window === 'undefined';
+  if (!isNode) {
+    try {
+      messagingInstance = getMessaging(app);
+    } catch (e) {
+      console.warn('[firebase] Messaging initialization skipped (unsupported environment):', e instanceof Error ? e.message : String(e));
     }
-  });
+    authInstance = getAuth(app);
+    onAuthStateChanged(authInstance, (user) => {
+      if (user) {
+        console.log('[auth] User:', { uid: user.uid, isAnonymous: user.isAnonymous, providerData: user.providerData?.map(p => p.providerId) });
+      } else {
+        console.log('[auth] No user');
+      }
+    });
+  }
   console.log("Firebase initialized with project:", firebaseConfig.projectId);
 } catch (e) {
   console.error('🔥 Firebase init failed:', e instanceof Error ? e.message : String(e));
