@@ -41,20 +41,8 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-// Minimal boot marker to help diagnose blank screen (removed after React mounts)
-try {
-  rootElement.textContent = 'Loading Paper Trader…';
-} catch {}
-
 const root = ReactDOM.createRoot(rootElement);
-// Hide debug overlay shortly after mounting to confirm React is active
-try {
-  const dbg = document.getElementById('preload-debug');
-  if (dbg) {
-    dbg.textContent = 'React mounted.';
-    setTimeout(() => { const d = document.getElementById('preload-debug'); if (d) d.style.display = 'none'; }, 600);
-  }
-} catch {}
+
 
 root.render(
   <React.StrictMode>

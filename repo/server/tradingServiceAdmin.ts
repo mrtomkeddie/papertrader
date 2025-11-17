@@ -3,9 +3,10 @@ import { AiTradeAction, Side, Position, PositionStatus, LedgerRefType, Explanati
 import { generateExplanationText, generateFailureAnalysis, generateBeginnerExplanationText } from '../services/geminiService';
 import { sendPushNotificationToAll } from './notificationService';
 import { fetchOHLCV } from '../services/dataService';
-import { TIMEFRAME_BY_SYMBOL } from '../constants';
+import { TIMEFRAME_BY_SYMBOL, BREAK_EVEN_R_BY_SYMBOL, LOCK_R_BY_SYMBOL, LOCK_OFFSET_R_BY_SYMBOL, ATR_TRAIL_START_R_BY_SYMBOL, ATR_MULT_BY_SYMBOL } from '../constants';
 import { calculateVWAP } from '../strategies/indicators';
-import { mapOandaSymbol, placeMarketOrder, closeTrade, getInstrumentMidPrice, updateStopLoss } from './broker/oanda';
+import { mapOandaSymbol, placeMarketOrder, closeTrade, getInstrumentMidPrice, updateStopLoss, getInstrumentCandles, closeTradeUnits, getInstrumentQuote, getInstrumentAverageSpread } from './broker/oanda';
+import { isWithinUsdNewsLockWindow } from '../services/newsService';
 
 export const executeAiTrade = async (
   trade: NonNullable<AiTradeAction['trade']>,
@@ -25,6 +26,7 @@ export const executeAiTrade = async (
   }
 
   // Volatility clamp using ATR% on suggested timeframe
+  let riskPctEff: number | undefined; // set below after reading baseline
   try {
     const tf = trade.suggested_timeframe && typeof trade.suggested_timeframe === 'string' ? trade.suggested_timeframe : '1h';
     const ohlcv = await fetchOHLCV(symbol, tf, 60);
@@ -55,8 +57,9 @@ export const executeAiTrade = async (
       if (atrPercent < 0.25) {
         return { success: false, message: `ATR% ${atrPercent.toFixed(2)} < 0.25%; skipping low-volatility trade.` };
       }
+      // If ATR% too high, reduce risk percent (will apply below)
       if (atrPercent > 1.0) {
-        riskAmountGbp = riskAmountGbp / 2;
+        riskPctEff = 'halve'; // marker, compute after baseline
       }
     }
   } catch (volErr) {
@@ -73,9 +76,9 @@ export const executeAiTrade = async (
   if (risk_per_share === 0) {
     return { success: false, message: 'Risk per share is zero, cannot open position.' };
   }
-  // Lot-based sizing for gold: 0.01 lot minimum (≈1 oz per $1 move)
+  // Percent-of-account sizing with ATR scaling
   const baseAccountGbp = Number(process.env.AUTOPILOT_ACCOUNT_GBP ?? process.env.VITE_AUTOPILOT_ACCOUNT_GBP ?? '250');
-  const riskPct = Number(process.env.AUTOPILOT_RISK_PCT ?? process.env.VITE_AUTOPILOT_RISK_PCT ?? '0.02');
+  const riskPctBase = Number(process.env.AUTOPILOT_RISK_PCT ?? process.env.VITE_AUTOPILOT_RISK_PCT ?? '0.02');
   let latestCash = 0;
   try {
     // Read latest ledger balance to reflect realized P/L
@@ -84,9 +87,41 @@ export const executeAiTrade = async (
   } catch {}
   const accountGbp = baseAccountGbp + latestCash;
   const stopDistance = Math.abs(entry_price - trade.stop_price);
+  let riskPct = riskPctBase;
+  if (riskPctEff === 'halve') riskPct = riskPctBase / 2;
   let lotSize = (accountGbp * riskPct) / (stopDistance * 100);
   lotSize = Math.max(0.01, lotSize);
   const qty = lotSize * 100; // position units
+
+  // Spread filter (requires OANDA pricing)
+  const broker = (process.env.AUTOPILOT_BROKER || process.env.VITE_AUTOPILOT_BROKER || '').toLowerCase();
+  const hasOandaCreds = (process.env.OANDA_API_TOKEN || process.env.VITE_OANDA_API_TOKEN);
+  if (broker === 'oanda' && hasOandaCreds) {
+    try {
+      const instrument = mapOandaSymbol(symbol);
+      const quote = await getInstrumentQuote(instrument);
+      const gran = 'M1';
+      const avgSpread = await getInstrumentAverageSpread(instrument, gran, 20);
+      const currentSpread = quote.ask - quote.bid;
+      const spreadMult = Number(process.env.SPREAD_FILTER_MULT ?? process.env.VITE_SPREAD_FILTER_MULT ?? '1.2');
+      if (Number.isFinite(avgSpread) && Number.isFinite(currentSpread) && currentSpread > spreadMult * avgSpread) {
+        return { success: false, message: `Spread filter: ${currentSpread.toFixed(5)} > ${spreadMult}× avg ${avgSpread.toFixed(5)}` };
+      }
+    } catch (err) {
+      console.warn('[TradingAdmin] Spread filter failed; continuing without spread guard:', err);
+    }
+  }
+
+  // News filter: skip 15m before/after high-impact USD news
+  try {
+    const nowDate = new Date();
+    const locked = await isWithinUsdNewsLockWindow(nowDate);
+    if (locked) {
+      return { success: false, message: 'News filter: within 15m of high-impact USD event' };
+    }
+  } catch (err) {
+    console.warn('[TradingAdmin] News filter check failed; proceeding:', err);
+  }
 
   const newPosition: Omit<Position, 'id'> = {
     status: PositionStatus.OPEN,
@@ -111,8 +146,8 @@ export const executeAiTrade = async (
   };
 
   // If broker integration is enabled, try real order on OANDA (practice by default)
-  const broker = (process.env.AUTOPILOT_BROKER || process.env.VITE_AUTOPILOT_BROKER || '').toLowerCase();
-  if (broker === 'oanda' && (process.env.OANDA_API_TOKEN || process.env.VITE_OANDA_API_TOKEN)) {
+  const broker2 = (process.env.AUTOPILOT_BROKER || process.env.VITE_AUTOPILOT_BROKER || '').toLowerCase();
+  if (broker2 === 'oanda' && (process.env.OANDA_API_TOKEN || process.env.VITE_OANDA_API_TOKEN)) {
     try {
       const instrument = mapOandaSymbol(symbol);
       const isLong = newPosition.side === Side.LONG;
@@ -187,8 +222,9 @@ export const runPriceCheckAdmin = async () => {
     
     // Use real price for OANDA-backed trades, fallback to simulated movement otherwise
     let currentPrice = lastPrice * (1 + (Math.random() - 0.5) * 0.05);
+    const hasOandaCreds = (process.env.OANDA_API_TOKEN || process.env.VITE_OANDA_API_TOKEN);
     const isOanda = pos.signal_id?.startsWith('oanda-');
-    if (isOanda) {
+    if (hasOandaCreds) {
       try {
         const instrument = mapOandaSymbol(pos.symbol);
         currentPrice = await getInstrumentMidPrice(instrument);
@@ -200,12 +236,26 @@ export const runPriceCheckAdmin = async () => {
     // Close-only trailing: fetch execution timeframe OHLCV and drive all stages from latest close
     try {
       const tf = TIMEFRAME_BY_SYMBOL[pos.symbol] ?? (process.env.AUTOPILOT_TRAIL_TF || process.env.VITE_AUTOPILOT_TRAIL_TF || '15m');
-      const ohlcv = await fetchOHLCV(pos.symbol, tf, 150);
-      if (!ohlcv.length) throw new Error('No OHLCV for trailing');
-      const latestClose = ohlcv[ohlcv.length - 1]?.close;
-      if (!Number.isFinite(latestClose)) throw new Error('Invalid latest close');
+      let ohlcv = [] as ReturnType<typeof fetchOHLCV> extends Promise<infer T> ? T : any;
+      let latestClose: number | undefined;
+      // Prefer OANDA candles for execution-time logic when creds available
+      if (hasOandaCreds) {
+        try {
+          const instrument = mapOandaSymbol(pos.symbol);
+          const gran = tf.toLowerCase() === '15m' ? 'M15' : tf.toLowerCase().startsWith('1h') ? 'H1' : 'M15';
+          ohlcv = await getInstrumentCandles(instrument, gran as any, 150);
+          latestClose = ohlcv[ohlcv.length - 1]?.close;
+        } catch (err) {
+          console.warn('[TradingAdmin] OANDA candles failed; falling back:', err);
+        }
+      }
+      if (!ohlcv.length) {
+        ohlcv = await fetchOHLCV(pos.symbol, tf, 150);
+        latestClose = ohlcv[ohlcv.length - 1]?.close;
+      }
+      if (!Number.isFinite(latestClose)) latestClose = currentPrice;
 
-      const breakEvenR = Number(process.env.AUTOPILOT_BREAK_EVEN_R ?? process.env.VITE_AUTOPILOT_BREAK_EVEN_R ?? '1');
+      const breakEvenR = BREAK_EVEN_R_BY_SYMBOL[pos.symbol] ?? Number(process.env.AUTOPILOT_BREAK_EVEN_R ?? process.env.VITE_AUTOPILOT_BREAK_EVEN_R ?? '1');
       const initialRisk = pos.initial_stop_price != null
         ? (pos.side === Side.LONG ? (pos.entry_price - pos.initial_stop_price) : (pos.initial_stop_price - pos.entry_price))
         : (pos.side === Side.LONG ? (pos.entry_price - pos.stop_price) : (pos.stop_price - pos.entry_price));
@@ -215,61 +265,77 @@ export const runPriceCheckAdmin = async () => {
           ? (latestClose - pos.entry_price) / risk
           : (pos.entry_price - latestClose) / risk;
 
-        // Stage 1 — Break-even with absolute buffer, close-only
-        const beAbsRaw = process.env.AUTOPILOT_BE_BUFFER_ABS ?? process.env.VITE_AUTOPILOT_BE_BUFFER_ABS;
-        let beAbs = beAbsRaw ? Number(beAbsRaw) : (/XAU/i.test(pos.symbol) ? 0.05 : 0.0004);
-        if (!Number.isFinite(beAbs) || beAbs < 0) beAbs = 0;
-        const stopNeedsMoveBE = pos.side === Side.LONG ? (pos.stop_price < pos.entry_price + beAbs) : (pos.stop_price > pos.entry_price - beAbs);
-        if (stopNeedsMoveBE && rNow >= breakEvenR) {
-          const beStop = pos.side === Side.LONG ? (pos.entry_price + beAbs) : (pos.entry_price - beAbs);
-          const shouldTighten = pos.side === Side.LONG ? (beStop > pos.stop_price) : (beStop < pos.stop_price);
-          if (shouldTighten) {
-            const log = { ts: new Date().toISOString(), old_stop: pos.stop_price, new_stop: beStop, stage: 'BE' };
-            const updated = { ...pos, stop_price: beStop, stop_change_logs: [...(pos.stop_change_logs ?? []), log] };
-            await db.updatePosition(updated);
-            if (isOanda) {
-              const tradeID = pos.signal_id.replace('oanda-', '');
-              try { await updateStopLoss(tradeID, beStop); } catch (err) {
-                console.warn('[TradingAdmin] OANDA BE stop update failed:', err);
+        // Stage TP1 — at +1.5R: close 50%, move SL to break-even
+        const tp1Done = (pos.stop_change_logs ?? []).some(l => l.stage === 'TP1CLOSE');
+        if (!tp1Done && rNow >= breakEvenR) {
+          try {
+            const closeUnits = Math.round(pos.qty * 0.5);
+            if (closeUnits > 0) {
+              // Real broker partial close if applicable
+              if (isOanda) {
+                const tradeID = pos.signal_id.replace('oanda-', '');
+                try { await closeTradeUnits(tradeID, closeUnits); } catch (err) {
+                  console.warn('[TradingAdmin] OANDA partial close (TP1) failed:', err);
+                }
               }
+              // Ledger P&L for partial close
+              const partialPnl = pos.side === Side.LONG
+                ? (latestClose - pos.entry_price) * closeUnits
+                : (pos.entry_price - latestClose) * closeUnits;
+              await db.addLedgerEntry({ ts: new Date().toISOString(), delta_gbp: partialPnl, ref_type: LedgerRefType.EXIT, ref_id: pos.id });
+
+              // Update position: reduce qty
+              let beStop = pos.entry_price; // exact break-even per spec
+              const log1 = { ts: new Date().toISOString(), old_stop: pos.stop_price, new_stop: beStop, stage: 'BE' };
+              const log2 = { ts: new Date().toISOString(), old_stop: beStop, new_stop: beStop, stage: 'TP1CLOSE' };
+              const updated = { ...pos, qty: pos.qty - closeUnits, stop_price: beStop, stop_change_logs: [...(pos.stop_change_logs ?? []), log1, log2] };
+              await db.updatePosition(updated);
+              if (isOanda) {
+                const tradeID = pos.signal_id.replace('oanda-', '');
+                try { await updateStopLoss(tradeID, beStop); } catch (err) {
+                  console.warn('[TradingAdmin] OANDA BE stop update failed:', err);
+                }
+              }
+              await sendPushNotificationToAll('TP1: 50% Closed + BE', `Closed 50% on ${pos.symbol} at ~${latestClose?.toFixed(5)} and moved stop to BE`, { positionId: pos.id });
             }
-            await sendPushNotificationToAll(
-              'Stop Moved to Break-Even',
-              `Moved stop to BE on ${pos.symbol} at ${beStop.toFixed(5)}`,
-              { positionId: pos.id }
-            );
+          } catch (err) {
+            console.warn('[TradingAdmin] TP1 partial close failed:', err);
           }
         }
 
-        // Stage 2 — Lock profit at +1.5R → stop = entry ± 0.5R (close-only)
-        const lockR = Number(process.env.AUTOPILOT_LOCK_R ?? process.env.VITE_AUTOPILOT_LOCK_R ?? '1.5');
-        const lockOffsetR = Number(process.env.AUTOPILOT_LOCK_OFFSET_R ?? process.env.VITE_AUTOPILOT_LOCK_OFFSET_R ?? '0.5');
-        if (rNow >= lockR && initialRisk > 0 && lockOffsetR > 0) {
-          const lockStopCandidate = pos.side === Side.LONG
-            ? pos.entry_price + lockOffsetR * initialRisk
-            : pos.entry_price - lockOffsetR * initialRisk;
-          const shouldTightenLock = pos.side === Side.LONG ? (lockStopCandidate > pos.stop_price) : (lockStopCandidate < pos.stop_price);
-          if (shouldTightenLock) {
-            const log = { ts: new Date().toISOString(), old_stop: pos.stop_price, new_stop: lockStopCandidate, stage: 'LOCK' };
-            const updated = { ...pos, stop_price: lockStopCandidate, stop_change_logs: [...(pos.stop_change_logs ?? []), log] };
-            await db.updatePosition(updated);
-            if (isOanda) {
-              const tradeID = pos.signal_id.replace('oanda-', '');
-              try { await updateStopLoss(tradeID, lockStopCandidate); } catch (err) {
-                console.warn('[TradingAdmin] OANDA lock-profit stop update failed:', err);
+        // Stage TP2 — at +3R: close 25% (half of remaining), start ATR trailing thereafter
+        const tp2Done = (pos.stop_change_logs ?? []).some(l => l.stage === 'TP2CLOSE');
+        const atrStartR = ATR_TRAIL_START_R_BY_SYMBOL[pos.symbol] ?? Number(process.env.AUTOPILOT_ATR_TRAIL_START_R ?? process.env.VITE_AUTOPILOT_ATR_TRAIL_START_R ?? '3');
+        const atrMult = ATR_MULT_BY_SYMBOL[pos.symbol] ?? Number(process.env.AUTOPILOT_ATR_MULT ?? process.env.VITE_AUTOPILOT_ATR_MULT ?? '1.5');
+        if (!tp2Done && rNow >= 3.0) {
+          try {
+            const closeUnits = Math.round(pos.qty * 0.5); // leave ~25% of original
+            if (closeUnits > 0) {
+              if (isOanda) {
+                const tradeID = pos.signal_id.replace('oanda-', '');
+                try { await closeTradeUnits(tradeID, closeUnits); } catch (err) {
+                  console.warn('[TradingAdmin] OANDA partial close (TP2) failed:', err);
+                }
               }
+              const partialPnl = pos.side === Side.LONG
+                ? (latestClose - pos.entry_price) * closeUnits
+                : (pos.entry_price - latestClose) * closeUnits;
+              await db.addLedgerEntry({ ts: new Date().toISOString(), delta_gbp: partialPnl, ref_type: LedgerRefType.EXIT, ref_id: pos.id });
+
+              const log = { ts: new Date().toISOString(), old_stop: pos.stop_price, new_stop: pos.stop_price, stage: 'TP2CLOSE' };
+              const updated = { ...pos, qty: pos.qty - closeUnits, stop_change_logs: [...(pos.stop_change_logs ?? []), log] };
+              // Set TP very far to avoid premature closure; rely on ATR trailing thereafter
+              const farTp = pos.side === Side.LONG ? (pos.entry_price + Math.abs(pos.entry_price) * 1000) : (pos.entry_price - Math.abs(pos.entry_price) * 1000);
+              (updated as any).tp_price = farTp;
+              await db.updatePosition(updated);
+              await sendPushNotificationToAll('TP2: 25% Closed + ATR Start', `Closed 25% (half remaining) on ${pos.symbol} at ~${latestClose?.toFixed(5)} and started ATR trailing`, { positionId: pos.id });
             }
-            await sendPushNotificationToAll(
-              'Stop Tightened (Lock Profit)',
-              `Lock profit on ${pos.symbol} to ${lockStopCandidate.toFixed(5)}`,
-              { positionId: pos.id }
-            );
+          } catch (err) {
+            console.warn('[TradingAdmin] TP2 partial close failed:', err);
           }
         }
 
-        // Stage 3 — ATR trailing after 2R (close-only): stop = max(current_stop, close ± m*ATR)
-        const atrStartR = Number(process.env.AUTOPILOT_ATR_TRAIL_START_R ?? process.env.VITE_AUTOPILOT_ATR_TRAIL_START_R ?? '2');
-        const atrMult = Number(process.env.AUTOPILOT_ATR_MULT ?? process.env.VITE_AUTOPILOT_ATR_MULT ?? '1.2');
+        // ATR trailing: stop = max(current_stop, close ± m*ATR)
         if (rNow >= atrStartR && atrMult > 0) {
           try {
             if (ohlcv.length >= 15) {
@@ -307,6 +373,7 @@ export const runPriceCheckAdmin = async () => {
                     console.warn('[TradingAdmin] OANDA ATR stop update failed:', err);
                   }
                 }
+                console.log(`[TradingAdmin] ATR trail moved on ${pos.symbol}: rNow=${rNow.toFixed(2)} >= atrStartR=${atrStartR.toFixed(2)}, atrMult=${atrMult.toFixed(2)}`);
                 await sendPushNotificationToAll(
                   'Trailing Stop Updated (ATR)',
                   `Trailing stop on ${pos.symbol} set to ${candidate.toFixed(5)}`,
@@ -317,49 +384,14 @@ export const runPriceCheckAdmin = async () => {
           } catch (err) {
             console.warn('[TradingAdmin] ATR trailing failed:', err);
           }
+        } else {
+          const reason = rNow < atrStartR
+            ? `rNow=${rNow.toFixed(2)} < atrStartR=${atrStartR.toFixed(2)}`
+            : (atrMult <= 0 ? `atrMult=${atrMult} ≤ 0` : 'no trail condition');
+          console.log(`[TradingAdmin] ATR gating on ${pos.symbol}: ${reason} (no ATR move)`);
         }
 
-        // Optional VWAP guard: tighten to VWAP ± buffer when price closes against position
-        const vwapGuard = (process.env.AUTOPILOT_VWAP_GUARD === '1') || (process.env.VITE_AUTOPILOT_VWAP_GUARD === '1');
-        if (vwapGuard) {
-          try {
-            const window = Math.min(50, ohlcv.length);
-            if (window >= 20) {
-              const vwapSeries = calculateVWAP(ohlcv.slice(-window));
-              const latestVWAP = vwapSeries[vwapSeries.length - 1];
-              const bufRaw = process.env.AUTOPILOT_VWAP_BUFFER_ABS ?? process.env.VITE_AUTOPILOT_VWAP_BUFFER_ABS;
-              let vwapAbs = bufRaw ? Number(bufRaw) : (/XAU/i.test(pos.symbol) ? 0.05 : 0.0005);
-              if (!Number.isFinite(vwapAbs) || vwapAbs < 0) vwapAbs = 0;
-              let candidate = pos.stop_price;
-              let shouldTightenVWAP = false;
-              if (pos.side === Side.LONG && latestClose < latestVWAP) {
-                candidate = latestVWAP - vwapAbs;
-                shouldTightenVWAP = candidate > pos.stop_price;
-              } else if (pos.side === Side.SHORT && latestClose > latestVWAP) {
-                candidate = latestVWAP + vwapAbs;
-                shouldTightenVWAP = candidate < pos.stop_price;
-              }
-              if (shouldTightenVWAP) {
-                const log = { ts: new Date().toISOString(), old_stop: pos.stop_price, new_stop: candidate, stage: 'VWAP' };
-                const updated = { ...pos, stop_price: candidate, stop_change_logs: [...(pos.stop_change_logs ?? []), log] };
-                await db.updatePosition(updated);
-                if (isOanda) {
-                  const tradeID = pos.signal_id.replace('oanda-', '');
-                  try { await updateStopLoss(tradeID, candidate); } catch (err) {
-                    console.warn('[TradingAdmin] OANDA VWAP stop update failed:', err);
-                  }
-                }
-                await sendPushNotificationToAll(
-                  'VWAP Guard Tightened Stop',
-                  `VWAP guard tightened stop on ${pos.symbol} to ${candidate.toFixed(5)}`,
-                  { positionId: pos.id }
-                );
-              }
-            }
-          } catch (err) {
-            console.warn('[TradingAdmin] VWAP guard failed:', err);
-          }
-        }
+        // VWAP guard removed to adhere to fixed strategy (no blending)
       }
     } catch (err) {
       console.warn('[TradingAdmin] Trailing adjustments failed:', err);

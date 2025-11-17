@@ -25,17 +25,33 @@ export default function DashboardBase({ title, strategyFilter }: {
     const enabledStr = ((import.meta.env as any).VITE_AUTOPILOT_ENABLED_STR || (import.meta.env as any).AUTOPILOT_ENABLED_STR || '') as string;
     return enabledStr
       ? enabledStr.toLowerCase().split(',').map(s => s.trim()).filter(Boolean)
-      : ['orb','trendatr','vwapreversion'];
+      : ['fixed-xau','fixed-nas'];
   }, []);
   const isEnabled = (id: string) => enabledIds.includes(id.toLowerCase());
 
   const inForexDay = (d: Date) => { const day = d.getUTCDay(); return day >= 1 && day <= 5; };
+  const getNyOpenUtc = (date: Date): Date => {
+    const year = date.getUTCFullYear();
+    const march = new Date(Date.UTC(year, 2, 1));
+    const firstSundayInMarch = 7 - march.getUTCDay();
+    const secondSundayInMarch = 1 + firstSundayInMarch + 7;
+    const dstStart = new Date(Date.UTC(year, 2, secondSundayInMarch));
+    const nov = new Date(Date.UTC(year, 10, 1));
+    const firstSundayInNov = 7 - nov.getUTCDay();
+    const dstEnd = new Date(Date.UTC(year, 10, 1 + firstSundayInNov));
+    const isDst = date >= dstStart && date < dstEnd;
+    const openHour = isDst ? 13 : 14;
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), openHour, 30, 0, 0));
+  };
   const isOpenWindow = (id: string, d: Date) => {
-    const hour = d.getUTCHours(); const min = d.getUTCMinutes(); const inDay = inForexDay(d);
+    const inDay = inForexDay(d);
     if (!inDay) return false;
-    if (id === 'orb') return (hour > 12 || (hour === 12 && min >= 15)) && hour < 20;
-    if (id === 'trendatr') return hour >= 12 && hour < 20;
-    if (id === 'vwapreversion') return hour >= 14 && hour < 17;
+    if (id === 'fixed' || id === 'fixed-xau' || id === 'fixed-nas') {
+      const open = getNyOpenUtc(d);
+      const orEnd = new Date(open.getTime() + 15 * 60_000);
+      const windowEnd = new Date(open.getTime() + 3 * 60 * 60_000);
+      return d >= orEnd && d <= windowEnd;
+    }
     return false;
   };
 
@@ -141,11 +157,22 @@ export default function DashboardBase({ title, strategyFilter }: {
   }, [positions, instrumentFilter, strategyFilterTable, tableRange]);
 
   // Bot metrics (re-usable)
-  const botDefs = [
-    { id: 'orb', name: 'ORB', match: (p: Position) => ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase().includes('orb') },
-    { id: 'trendatr', name: 'Trend Pullback', match: (p: Position) => ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase().includes('trend') },
-    { id: 'vwapreversion', name: 'VWAP Reversion', match: (p: Position) => ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase().includes('vwap') },
-  ];
+  const botDefs = useMemo(() => {
+    const defs = [
+      { id: 'fixed-xau', name: 'Fixed ORB + FVG + LVN (Gold)', match: (p: Position) => {
+        const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
+        return text.includes('fixed-orb-fvg-lvn') && ((p.symbol ?? '').toUpperCase().includes('XAU'));
+      } },
+      { id: 'fixed-nas', name: 'Fixed ORB + FVG + LVN (NAS100)', match: (p: Position) => {
+        const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
+        return text.includes('fixed-orb-fvg-lvn') && ((p.symbol ?? '').toUpperCase().includes('NAS'));
+      } },
+    ];
+    const t = title.toLowerCase();
+    if (t.includes('gold')) return [defs[0]];
+    if (t.includes('nas')) return [defs[1]];
+    return defs;
+  }, [title]);
   const MAX_TRADES_CAP = Number((import.meta.env as any).VITE_AUTOPILOT_MAX_TRADES_PER_SESSION ?? (import.meta.env as any).AUTOPILOT_MAX_TRADES_PER_SESSION ?? 5);
   const botMetrics = useMemo(() => {
     const list = filteredPositions;
@@ -280,7 +307,7 @@ export default function DashboardBase({ title, strategyFilter }: {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg overflow-hidden">
             <table className="min-w-full table-premium recent-trades-table">
               <thead>
                 <tr>

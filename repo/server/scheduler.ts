@@ -1,14 +1,12 @@
+import './preload';
 import dotenv from 'dotenv';
+// Load default local env, then allow user-specific overrides to take precedence
 dotenv.config({ path: '.env.local' });
 dotenv.config();
+dotenv.config({ path: '.env.local.user', override: true });
 import { TIMEFRAME_BY_SYMBOL } from '../constants';
-import { fetchOHLCV } from '../services/dataService';
-import { trendAtrBot } from '../bots/trendAtr';
-import { orbBot } from '../bots/orb';
-import { vwapBot } from '../bots/vwapReversion';
-import { trendAtrBotNas } from '../bots/trendAtrNas';
-import { orbBotNas } from '../bots/orbNas';
-import { vwapBotNas } from '../bots/vwapReversionNas';
+import { fixedOrbFvgLvnXauBot } from '../bots/fixedOrbFvgLvnXau';
+import { fixedOrbFvgLvnNasBot } from '../bots/fixedOrbFvgLvnNas';
 import { executeAiTrade, runPriceCheckAdmin } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
@@ -21,33 +19,29 @@ const scanMinutes = Number(process.env.VITE_SCHEDULER_SCAN_MINUTES ?? process.en
 const dailyCapEnv = process.env.VITE_DAILY_TRADE_CAP ?? process.env.AUTOPILOT_DAILY_TRADE_CAP;
 const dailyCap = dailyCapEnv === undefined ? undefined : (Number.isFinite(Number(dailyCapEnv)) ? Number(dailyCapEnv) : 5);
 
-// Per-bot caps via env, fallback to defaults if env missing/invalid
-const parseCap = (v: string | undefined, fallback: number): number => {
-  if (v == null) return fallback;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
+// New York open window: after OR completes until +3h, weekdays only
+const getNyOpenUtc = (date: Date): Date => {
+  const year = date.getUTCFullYear();
+  const march = new Date(Date.UTC(year, 2, 1));
+  const firstSundayInMarch = 7 - march.getUTCDay();
+  const secondSundayInMarch = 1 + firstSundayInMarch + 7;
+  const dstStart = new Date(Date.UTC(year, 2, secondSundayInMarch));
+  const nov = new Date(Date.UTC(year, 10, 1));
+  const firstSundayInNov = 7 - nov.getUTCDay();
+  const dstEnd = new Date(Date.UTC(year, 10, 1 + firstSundayInNov));
+  const isDst = date >= dstStart && date < dstEnd;
+  const openHour = isDst ? 13 : 14;
+  const openMinute = 30;
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), openHour, openMinute, 0, 0));
 };
-const capTrendAtr = parseCap(process.env.VITE_CAP_TRENDATR, 3);
-const capOrb = parseCap(process.env.VITE_CAP_ORB, 3);
-const capVwapReversion = parseCap(process.env.VITE_CAP_VWAPREVERSION, 2);
-
-// Per-bot enable toggles via env: 1|0; if unset, use bot.isEnabled()
-const parseEnable = (v: string | undefined): boolean | undefined => {
-  if (v === '1') return true;
-  if (v === '0') return false;
-  return undefined;
-};
-const envEnableByBot: Record<string, boolean | undefined> = {
-  trendAtr: parseEnable(process.env.VITE_ENABLE_TRENDATR),
-  orb: parseEnable(process.env.VITE_ENABLE_ORB),
-  vwapReversion: parseEnable(process.env.VITE_ENABLE_VWAPREVERSION),
-};
-
-const isForexWindow = () => {
+const isNySessionWindow = () => {
   const now = new Date();
-  const h = now.getUTCHours();
-  const d = now.getUTCDay();
-  return d >= 1 && d <= 5 && h >= 12 && h < 20;
+  const dow = now.getUTCDay();
+  if (dow < 1 || dow > 5) return false;
+  const open = getNyOpenUtc(now);
+  const orEnd = new Date(open.getTime() + 15 * 60_000);
+  const windowEnd = new Date(open.getTime() + 3 * 60 * 60_000);
+  return now >= orEnd && now <= windowEnd;
 };
 
 let lastRunKey = '';
@@ -62,44 +56,16 @@ const alreadyRanThisInterval = () => {
 };
 
 const getWindowName = (): 'forex' | 'none' => {
-  return isForexWindow() ? 'forex' : 'none';
+  return isNySessionWindow() ? 'forex' : 'none';
 };
 
-async function shouldSkipStrategy(strategyName: string, symbol: string): Promise<string | null> {
-  try {
-    const recent = await db.getClosedPositionsForStrategy(strategyName, symbol, 20);
-    if (!recent.length) return null;
-
-    const pnl = recent.map((p) => Number(p.pnl_gbp ?? 0)).filter((v) => Number.isFinite(v));
-    let consecutiveLosses = 0;
-    for (const v of pnl) {
-      if (v <= 0) consecutiveLosses++;
-      else break;
-    }
-    if (consecutiveLosses >= 5) {
-      return `Kill switch: ${strategyName} has ${consecutiveLosses} consecutive losses`;
-    }
-
-    const wins = pnl.filter((v) => v > 0).reduce((a, b) => a + b, 0);
-    const lossesAbs = pnl.filter((v) => v < 0).reduce((a, b) => a + Math.abs(b), 0);
-    const profitFactor = lossesAbs > 0 ? wins / lossesAbs : Infinity;
-
-    if (pnl.length >= 10 && profitFactor < 1.0) {
-      return `Kill switch: ${strategyName} profit factor ${profitFactor.toFixed(2)} < 1.0 over last ${pnl.length} trades`;
-    }
-
-    return null;
-  } catch (e) {
-    console.error('Kill switch check error:', e);
-    return null;
-  }
-}
+// Kill switches removed per fixed-strategy requirement
 
 async function tick() {
   const windowName = getWindowName();
   const msgs: string[] = [];
-  const botsXau = [trendAtrBot, orbBot, vwapBot];
-  const botsNas = [trendAtrBotNas, orbBotNas, vwapBotNas];
+  const botsXau = [fixedOrbFvgLvnXauBot];
+  const botsNas = [fixedOrbFvgLvnNasBot];
 
   if (!enabled) {
     msgs.push('Scheduler disabled');
@@ -141,29 +107,7 @@ async function tick() {
     return;
   }
   const ops: Opportunity[] = [];
-  // Daily cap: configurable via env; per-bot caps optional
-  let placedToday = 0;
-  try {
-    placedToday = await db.countPositionsPlacedToday();
-  } catch (err) {
-    console.warn('[Scheduler] Could not count positions placed today:', err);
-  }
-  // Per-bot caps: unlimited if not defined
-  const botCaps: Record<string, number | undefined> = {
-    trendAtr: capTrendAtr,
-    orb: capOrb,
-    vwapReversion: capVwapReversion,
-  };
-  const placedByBot: Record<string, number> = {};
-  const uniqueBotIds = Array.from(new Set([...botsXau, ...botsNas].map(b => b.id)));
-  for (const bid of uniqueBotIds) {
-    try {
-      placedByBot[bid] = await db.countPositionsPlacedTodayByStrategy(bid);
-    } catch (err) {
-      placedByBot[bid] = 0;
-      console.warn(`[Scheduler] Could not count positions placed today for ${bid}:`, err);
-    }
-  }
+  // Daily counts per instrument/side (fixed limits): max 2 longs/day, max 2 shorts/day
   const symbolBots: { symbol: string; bots: typeof botsXau }[] = [
     { symbol: 'OANDA:XAUUSD', bots: botsXau },
     { symbol: 'OANDA:NAS100_USD', bots: botsNas },
@@ -171,9 +115,7 @@ async function tick() {
   for (const { symbol, bots } of symbolBots) {
     for (const bot of bots) {
       try {
-        const envEnabled = envEnableByBot[bot.id];
-        if (envEnabled === false) { msgs.push(`skip: bot disabled via env [${bot.id}]`); continue; }
-        if (envEnabled === undefined && !bot.isEnabled()) { msgs.push(`bot ${bot.id} disabled`); continue; }
+        if (!bot.isEnabled()) { msgs.push(`bot ${bot.id} disabled`); continue; }
         const now = new Date();
         if (!bot.isWindowOpen(now)) { msgs.push(`bot ${bot.id} window closed`); continue; }
         const signals = await bot.scan();
@@ -198,26 +140,23 @@ async function tick() {
     for (const op of ops) {
       const trade = op.action.trade!;
       const side = trade.side;
-      // Optional: block duplicate open positions by symbol+side (disabled by default)
-      const blockDup = ((process.env.AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE || process.env.VITE_AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE || 'false') as string).toLowerCase() === 'true';
+      // Block duplicate open positions by symbol+side (enabled by default)
+      const blockDup = ((process.env.AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE || process.env.VITE_AUTOPILOT_BLOCK_DUPLICATE_SYMBOL_SIDE || 'true') as string).toLowerCase() === 'true';
       if (blockDup) {
         const open = (await db.getOpenPositions()).find(p => p.symbol === op.symbol && p.side === side);
         if (open) { msgs.push(`Duplicate open position on ${op.symbol} (${side})`); continue; }
       }
-      // Enforce daily cap if configured
-      if (dailyCap !== undefined && (placedToday + placed) >= dailyCap) {
-        msgs.push(`skip: daily cap reached (${dailyCap} trades)`);
-        continue;
-      }
-      // Enforce per-bot cap if configured
+      // Enforce per-instrument per-side daily limits: max 2 longs/shorts
       const botId = (op as any).extra?.botId as string | undefined;
-      const capForBot = botId ? botCaps[botId] : undefined;
-      if (botId && capForBot !== undefined) {
-        const placedForBot = (placedByBot[botId] ?? 0) + ops.filter(o => (o as any).extra?.botId === botId).length;
-        if (placedForBot >= capForBot) {
-          msgs.push(`skip: ${botId} bot cap reached (${capForBot}/day)`);
+      try {
+        const sideStr = side === 'LONG' ? 'LONG' : 'SHORT';
+        const placedSideToday = await db.countPositionsPlacedTodayBySymbolSide(op.symbol, sideStr as any);
+        if (placedSideToday >= 2) {
+          msgs.push(`skip: daily per-side cap reached for ${op.symbol} (${sideStr})`);
           continue;
         }
+      } catch (err) {
+        console.warn('[Scheduler] Per-side daily count failed:', err);
       }
       const res = await executeAiTrade(trade, op.symbol, riskGbp, botId);
       if (res.success) {
@@ -251,12 +190,16 @@ async function tick() {
 
 function getNextForexStartUtc(now: Date): Date {
   for (let i = 0; i < 8; i++) {
-    const candidate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + i, 12, 0, 0));
-    const dow = candidate.getUTCDay();
-    if (dow >= 1 && dow <= 5 && candidate > now) return candidate;
+    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + i));
+    const candidateOpen = getNyOpenUtc(date);
+    const orEnd = new Date(candidateOpen.getTime() + 15 * 60_000);
+    const dow = orEnd.getUTCDay();
+    if (dow >= 1 && dow <= 5 && orEnd > now) return orEnd;
   }
   const daysUntilMonday = (8 - now.getUTCDay()) % 7 || 7;
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilMonday, 12, 0, 0));
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilMonday));
+  const open = getNyOpenUtc(monday);
+  return new Date(open.getTime() + 15 * 60_000);
 }
 
 function scheduleNext() {
@@ -264,7 +207,7 @@ function scheduleNext() {
   if (windowName === 'none') {
     const delay = getNextForexStartUtc(new Date()).getTime() - Date.now();
     const safeDelay = Math.max(delay, 30_000);
-    console.log(`[Scheduler] Outside forex hours. Next tick in ${(safeDelay / 60000).toFixed(1)} min.`);
+    console.log(`[Scheduler] Outside NY OR window. Next tick in ${(safeDelay / 60000).toFixed(1)} min.`);
     setTimeout(() => {
       tick().catch(err => console.error('[Scheduler] Tick error:', err)).finally(scheduleNext);
     }, safeDelay);

@@ -273,3 +273,29 @@ export const countPositionsPlacedTodayByStrategy = async (strategyId: string): P
   const snap = await getDocs(q);
   return snap.docs.length;
 };
+
+// Count positions placed today for a specific symbol and side
+export const countPositionsPlacedTodayBySymbolSide = async (symbol: string, side: 'LONG' | 'SHORT'): Promise<number> => {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)).toISOString();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999)).toISOString();
+  if (adminDb) {
+    const snap = await adminDb
+      .collection('positions')
+      .where('symbol', '==', symbol)
+      .where('side', '==', side)
+      .where('entry_ts', '>=', start)
+      .where('entry_ts', '<=', end)
+      .get();
+    return snap.docs.length;
+  }
+  const q = query(
+    collection(requireClientDb(), 'positions'),
+    where('symbol', '==', symbol),
+    where('side', '==', side),
+    where('entry_ts', '>=', start),
+    where('entry_ts', '<=', end)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.length;
+};

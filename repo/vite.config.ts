@@ -1,10 +1,28 @@
 import path from 'path';
+import fs from 'fs';
+import dotenv from 'dotenv';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
+    // Load environment from the actual working directory to ensure .env.local is picked up
+    let env = loadEnv(mode, process.cwd(), '');
+    // Fallback: if keys are missing, parse .env.local and .env.local.user directly
+    const fallbackFiles = ['.env.local', '.env.local.user'];
+    for (const file of fallbackFiles) {
+      const full = path.resolve(process.cwd(), file);
+      if (fs.existsSync(full)) {
+        try {
+          const parsed = dotenv.parse(fs.readFileSync(full));
+          // Merge only missing keys; prefer existing env
+          env = { ...parsed, ...env };
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn(`[vite] Failed to parse ${file}:`, e instanceof Error ? e.message : String(e));
+        }
+      }
+    }
     const firebaseEnv = {
       VITE_FIREBASE_API_KEY: env.VITE_FIREBASE_API_KEY || env.FIREBASE_API_KEY || process.env.FIREBASE_API_KEY || '',
       VITE_FIREBASE_AUTH_DOMAIN: env.VITE_FIREBASE_AUTH_DOMAIN || env.FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN || '',
@@ -14,6 +32,16 @@ export default defineConfig(({ mode }) => {
       VITE_FIREBASE_APP_ID: env.VITE_FIREBASE_APP_ID || env.FIREBASE_APP_ID || process.env.FIREBASE_APP_ID || '',
       VITE_FIREBASE_VAPID_KEY: env.VITE_FIREBASE_VAPID_KEY || env.FIREBASE_VAPID_KEY || process.env.FIREBASE_VAPID_KEY || '',
     };
+    // Helpful diagnostics in dev to confirm env loading
+    if (mode === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('[vite] Loaded env (development):', {
+        cwd: process.cwd(),
+        VITE_FIREBASE_API_KEY: firebaseEnv.VITE_FIREBASE_API_KEY ? '[present]' : '[missing]',
+        VITE_FIREBASE_AUTH_DOMAIN: firebaseEnv.VITE_FIREBASE_AUTH_DOMAIN ? '[present]' : '[missing]',
+        VITE_FIREBASE_PROJECT_ID: firebaseEnv.VITE_FIREBASE_PROJECT_ID ? '[present]' : '[missing]',
+      });
+    }
     return {
       server: {
         port: 5174,

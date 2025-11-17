@@ -25,9 +25,29 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
   const [now, setNow] = React.useState<Date>(new Date());
   React.useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
   const inForexDay = (d: Date) => { const day = d.getUTCDay(); return day >= 1 && day <= 5; };
+  const getNyOpenUtc = (date: Date): Date => {
+    const year = date.getUTCFullYear();
+    const march = new Date(Date.UTC(year, 2, 1));
+    const firstSundayInMarch = 7 - march.getUTCDay();
+    const secondSundayInMarch = 1 + firstSundayInMarch + 7;
+    const dstStart = new Date(Date.UTC(year, 2, secondSundayInMarch));
+    const nov = new Date(Date.UTC(year, 10, 1));
+    const firstSundayInNov = 7 - nov.getUTCDay();
+    const dstEnd = new Date(Date.UTC(year, 10, 1 + firstSundayInNov));
+    const isDst = date >= dstStart && date < dstEnd;
+    const openHour = isDst ? 13 : 14;
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), openHour, 30, 0, 0));
+  };
   const isOpenWindow = (id: string, d: Date) => {
-    const hour = d.getUTCHours(); const min = d.getUTCMinutes(); const inDay = inForexDay(d);
+    const inDay = inForexDay(d);
     if (!inDay) return false;
+    if (id === 'fixed' || id === 'fixed-xau' || id === 'fixed-nas') {
+      const open = getNyOpenUtc(d);
+      const orEnd = new Date(open.getTime() + 15 * 60_000);
+      const windowEnd = new Date(open.getTime() + 3 * 60 * 60_000);
+      return d >= orEnd && d <= windowEnd;
+    }
+    const hour = d.getUTCHours(); const min = d.getUTCMinutes();
     if (id === 'trendatr_xau') return hour >= 12 && hour < 20;
     if (id === 'trendatr_nas') return ((hour > 14) || (hour === 14 && min >= 30)) && hour < 20;
     if (id === 'orb') return (hour >= 12 && hour < 20) && (hour > 12 || (hour === 12 && min >= 15));
@@ -35,6 +55,19 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
     return false;
   };
   const nextOpen = (id: string, from: Date) => {
+    if (id === 'fixed' || id === 'fixed-xau' || id === 'fixed-nas') {
+      for (let i = 0; i < 8; i++) {
+        const date = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate() + i));
+        const candidateOpen = getNyOpenUtc(date);
+        const orEnd = new Date(candidateOpen.getTime() + 15 * 60_000);
+        const dow = orEnd.getUTCDay();
+        if (dow >= 1 && dow <= 5 && orEnd > from) return orEnd;
+      }
+      const daysUntilMonday = (8 - from.getUTCDay()) % 7 || 7;
+      const monday = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate() + daysUntilMonday));
+      const open = getNyOpenUtc(monday);
+      return new Date(open.getTime() + 15 * 60_000);
+    }
     const advanceToWeekday = (x: Date) => { let y = new Date(x); let day = y.getUTCDay(); while (day === 0 || day === 6) { y.setUTCDate(y.getUTCDate() + 1); day = y.getUTCDay(); } return y; };
     const base = advanceToWeekday(from);
     if (id === 'trendatr_xau') { const d = new Date(base); d.setUTCHours(12,0,0,0); if (from <= d) return d; d.setUTCDate(d.getUTCDate() + 1); return advanceToWeekday(d); }
@@ -43,14 +76,23 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
     if (id === 'vwapReversion') { const d = new Date(base); d.setUTCHours(14,0,0,0); if (from <= d) return d; d.setUTCDate(d.getUTCDate() + 1); return advanceToWeekday(d); }
     return base;
   };
-  const endToday = (id: string, from: Date) => { const t = new Date(from); t.setUTCHours(20,0,0,0); return t; };
+  const endToday = (id: string, from: Date) => {
+    if (id === 'fixed' || id === 'fixed-xau' || id === 'fixed-nas') {
+      const open = getNyOpenUtc(from);
+      return new Date(open.getTime() + 3 * 60 * 60_000);
+    }
+    const t = new Date(from); t.setUTCHours(20,0,0,0); return t;
+  };
   const fmtCountdown = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = s % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
   const open = isOpenWindow(id, now);
   const next = nextOpen(id, now);
   const closesIn = Math.max(0, endToday(id, now).getTime() - now.getTime());
   const opensIn = Math.max(0, next.getTime() - now.getTime());
 
-  const subtext = id === 'trendatr_xau' ? 'XAUUSD • 15m • 12:00–20:00 UTC'
+  const subtext = id === 'fixed' ? 'NY OR Window • Mon–Fri'
+    : id === 'fixed-xau' ? 'XAUUSD • NY OR Window • Mon–Fri'
+    : id === 'fixed-nas' ? 'NAS100 • NY OR Window • Mon–Fri'
+    : id === 'trendatr_xau' ? 'XAUUSD • 15m • 12:00–20:00 UTC'
     : id === 'trendatr_nas' ? 'NAS100 • 15m • 14:30–20:00 UTC'
     : id === 'orb' ? 'XAUUSD • 15m • 12:15–20:00 UTC'
     : id === 'vwapReversion' ? 'XAUUSD • 15m • 14:00–17:00 UTC' : '';
@@ -60,6 +102,10 @@ const pnlColor = pnl > 0 ? 'text-accent-green' : pnl < 0 ? 'text-red-300' : 'tex
 
   // Progress bar when window is open
   const windowStart = React.useMemo(() => {
+    if (id === 'fixed' || id === 'fixed-xau' || id === 'fixed-nas') {
+      const open = getNyOpenUtc(now);
+      return new Date(open.getTime() + 15 * 60_000);
+    }
     const d = new Date(now);
     if (id === 'trendatr_xau') { d.setUTCHours(12,0,0,0); }
     else if (id === 'trendatr_nas') { d.setUTCHours(14,30,0,0); }
@@ -68,7 +114,15 @@ const pnlColor = pnl > 0 ? 'text-accent-green' : pnl < 0 ? 'text-red-300' : 'tex
     else { d.setUTCHours(0,0,0,0); }
     return d;
   }, [id, now]);
-  const windowEnd = React.useMemo(() => { const t = new Date(now); if (id === 'vwapReversion') { t.setUTCHours(17,0,0,0); } else { t.setUTCHours(20,0,0,0); } return t; }, [now, id]);
+  const windowEnd = React.useMemo(() => {
+    if (id === 'fixed' || id === 'fixed-xau' || id === 'fixed-nas') {
+      const open = getNyOpenUtc(now);
+      return new Date(open.getTime() + 3 * 60 * 60_000);
+    }
+    const t = new Date(now);
+    if (id === 'vwapReversion') { t.setUTCHours(17,0,0,0); } else { t.setUTCHours(20,0,0,0); }
+    return t;
+  }, [now, id]);
   const durationMs = Math.max(0, windowEnd.getTime() - windowStart.getTime());
   const elapsedMs = Math.max(0, now.getTime() - windowStart.getTime());
   const progressPct = open && durationMs > 0 ? Math.min(100, Math.max(0, (elapsedMs / durationMs) * 100)) : 0;

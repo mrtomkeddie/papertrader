@@ -36,22 +36,39 @@ const Scanner: React.FC = () => {
     setScanProgress({ current: 0, total: 0 });
 
     const now = new Date();
-    const currentHourUTC = now.getUTCHours();
     const currentDayUTC = now.getUTCDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceWindow = (urlParams.get('forceWindow') || urlParams.get('forcewindow')) === '1';
 
-    // Forex-only optimal window in UTC
-    const isForexHours = currentDayUTC >= 1 && currentDayUTC <= 5 && currentHourUTC >= 12 && currentHourUTC < 20;
+    // NY session OR-complete window (DST-aware): from NY open + 15m to +3h, Mon–Fri
+    const getNyOpenUtc = (d: Date): Date => {
+      const year = d.getUTCFullYear();
+      const march = new Date(Date.UTC(year, 2, 1));
+      const firstSundayInMarch = 7 - march.getUTCDay();
+      const secondSundayInMarch = 1 + firstSundayInMarch + 7;
+      const dstStart = new Date(Date.UTC(year, 2, secondSundayInMarch));
+      const nov = new Date(Date.UTC(year, 10, 1));
+      const firstSundayInNov = 7 - nov.getUTCDay();
+      const dstEnd = new Date(Date.UTC(year, 10, 1 + firstSundayInNov));
+      const isDst = d >= dstStart && d < dstEnd;
+      const openHour = isDst ? 13 : 14;
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), openHour, 30, 0, 0));
+    };
+    const nyOpen = getNyOpenUtc(now);
+    const orEnd = new Date(nyOpen.getTime() + 15 * 60_000);
+    const windowEnd = new Date(nyOpen.getTime() + 3 * 60 * 60_000);
+    const isNySessionWindow = forceWindow || (currentDayUTC >= 1 && currentDayUTC <= 5 && now >= orEnd && now <= windowEnd);
     
     let marketsToScan = [] as typeof SELECTED_INSTRUMENTS;
     let scannedMarketTypes: string[] = [];
 
-    if (isForexHours) {
+    if (isNySessionWindow) {
         marketsToScan.push(...SELECTED_INSTRUMENTS);
-        scannedMarketTypes.push('Selected');
+        scannedMarketTypes.push('NY OR Window');
     }
 
     if (marketsToScan.length === 0) {
-        setError("No markets are in their optimal trading session. Please try again during the recommended times for the best results.");
+        setError("No markets are in the NY opening range window. Try again when the window is active.");
         setIsScanning(false);
         return;
     }
@@ -113,6 +130,28 @@ const Scanner: React.FC = () => {
       date.setUTCHours(hour, 0, 0, 0);
       return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
   };
+  const getNyWindowLocal = (): { start: string; end: string } => {
+    const now = new Date();
+    const nyOpen = (() => {
+      const year = now.getUTCFullYear();
+      const march = new Date(Date.UTC(year, 2, 1));
+      const firstSundayInMarch = 7 - march.getUTCDay();
+      const secondSundayInMarch = 1 + firstSundayInMarch + 7;
+      const dstStart = new Date(Date.UTC(year, 2, secondSundayInMarch));
+      const nov = new Date(Date.UTC(year, 10, 1));
+      const firstSundayInNov = 7 - nov.getUTCDay();
+      const dstEnd = new Date(Date.UTC(year, 10, 1 + firstSundayInNov));
+      const isDst = now >= dstStart && now < dstEnd;
+      const openHour = isDst ? 13 : 14;
+      return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), openHour, 30, 0, 0));
+    })();
+    const start = new Date(nyOpen.getTime() + 15 * 60_000);
+    const end = new Date(nyOpen.getTime() + 3 * 60 * 60_000);
+    return {
+      start: start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }),
+      end: end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }),
+    };
+  };
   
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop()?.replace('_', ' ');
 
@@ -128,6 +167,13 @@ const Scanner: React.FC = () => {
                 <p className="text-gray-400 max-w-4xl mt-1">
                   Times are shown in your local timezone ({timezone}).
                 </p>
+                {(() => {
+                  const params = new URLSearchParams(window.location.search);
+                  const forced = (params.get('forceWindow') || params.get('forcewindow')) === '1';
+                  return forced ? (
+                    <p className="text-xs text-accent-green mt-1">Developer: Window forced ON via ?forceWindow=1</p>
+                  ) : null;
+                })()}
             </div>
              <div className="text-left sm:text-right flex-shrink-0 mt-3 sm:mt-0">
                 <p className="text-lg font-mono text-gray-200">
@@ -144,11 +190,11 @@ const Scanner: React.FC = () => {
           <div className="card-premium p-2 sm:p-4 rounded-lg sm:rounded-xl flex items-center space-x-3 sm:space-x-4">
             <div className="text-primary-light"><GlobeIcon /></div>
             <div>
-              <h4 className="font-bold text.white">Active Markets</h4>
+              <h4 className="font-bold text.white">NY Opening Range Window</h4>
               <p className="text-xl sm:text-2xl font-bold font-mono text-primary-light tracking-wider">
-                {formatUtcHourToLocal(12)} - {formatUtcHourToLocal(20)}
+                {getNyWindowLocal().start} - {getNyWindowLocal().end}
               </p>
-              <p className="text-xs text-gray-400">Mon-Fri (London/NY Overlap)</p>
+              <p className="text-xs text-gray-400">Mon–Fri (NY cash open + 15m → +3h)</p>
             </div>
           </div>
         </div>

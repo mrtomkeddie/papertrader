@@ -7,7 +7,7 @@ import DashboardNas100 from './pages/DashboardNas100';
 const PositionDetail = React.lazy(() => import('./pages/PositionDetail'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 import { DashboardIcon, ListIcon, SettingsIcon } from './components/icons/Icons';
-import { auth, db } from './services/firebase';
+import { auth, db, isFirebaseConfigured, firebaseInitError, firebaseDiagnostics } from './services/firebase';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { initDb } from './services/database';
 import { ToastContainer } from 'react-toastify';
@@ -19,7 +19,8 @@ import { ListIcon as MenuIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
   const [isAuthed, setIsAuthed] = useState<boolean>(!!auth?.currentUser);
-  const setupMissing = !auth;
+  const setupMissing = !isFirebaseConfigured;
+  const hasInitError = Boolean(firebaseInitError);
   const [authError, setAuthError] = useState<string | null>(null);
   // Render-state debug to track which branch is active
   try {
@@ -88,6 +89,7 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
+      {/* Debug overlay removed */}
       {/* Dev overlay removed per request */}
       {setupMissing ? (
         <div className="min-h-screen flex items-center justify-center bg-black text-gray-200">
@@ -106,9 +108,29 @@ const App: React.FC = () => {
                 <li>API Key present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY))}</li>
                 <li>Auth Domain present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN))}</li>
                 <li>Project ID present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_PROJECT_ID))}</li>
+                <li>Config hasApiKey: {String(firebaseDiagnostics.hasApiKey)} (len {firebaseDiagnostics.apiKeyLen})</li>
+                <li>Config hasAuthDomain: {String(firebaseDiagnostics.hasAuthDomain)}</li>
+                <li>Config hasProjectId: {String(firebaseDiagnostics.hasProjectId)}</li>
               </ul>
             </div>
             <p className="text-gray-400 text-sm">After updating, restart the dev server.</p>
+          </div>
+        </div>
+      ) : hasInitError ? (
+        <div className="min-h-screen flex items-center justify-center bg-black text-gray-200">
+          <div className="card-premium p-6 rounded-xl shadow-lg max-w-lg">
+            <h2 className="text-xl font-semibold mb-3 text-primary-light">Firebase init failed</h2>
+            <p className="text-gray-300 mb-4">{firebaseInitError}</p>
+            <p className="text-gray-400 text-sm mb-3">Check that your keys in <code className="bg-black/30 px-1 py-0.5 rounded">repo/.env.local</code> are valid and match your Firebase web app config. The API key should start with <code className="bg-black/30 px-1 py-0.5 rounded">AIza</code>.</p>
+            <div className="bg-black/30 rounded p-3 text-sm text-gray-300">
+              <p className="font-semibold mb-2">Detected (non-sensitive):</p>
+              <ul className="space-y-1">
+                <li>API Key present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_API_KEY))}</li>
+                <li>Auth Domain present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN))}</li>
+                <li>Project ID present: {String(Boolean((import.meta as any).env?.VITE_FIREBASE_PROJECT_ID))}</li>
+              </ul>
+            </div>
+            <p className="text-gray-400 text-sm">After fixing, restart the dev server.</p>
           </div>
         </div>
       ) : !isAuthed ? (

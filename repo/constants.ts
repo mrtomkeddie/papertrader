@@ -26,14 +26,41 @@ export const SELECTED_INSTRUMENTS = [
 ];
 
 export const TIMEFRAME_BY_SYMBOL: Record<string, string> = {
-  'FX:EURUSD': '1h',
   'OANDA:XAUUSD': '15m',
   'OANDA:NAS100_USD': '15m',
 };
 
 export const SELECTED_METHODS = [
-  // Strategy names must match signal.strategy from strategyService
-  'ORB',
-  'Trend Pullback',
-  'VWAP Reversion',
+  // Only the new fixed strategy
+  'FIXED ORB + FVG + LVN',
 ];
+
+// Symbol-specific protection parameters for live trailing and stop logic
+export const BREAK_EVEN_R_BY_SYMBOL: Record<string, number> = {
+  // Move to break-even at +1.5R (TP1 stage)
+  'OANDA:XAUUSD': 1.5,
+  'OANDA:NAS100_USD': 1.5,
+};
+
+export const LOCK_R_BY_SYMBOL: Record<string, number> = {
+  // Disable legacy lock stage (handled via partial closes)
+  'OANDA:XAUUSD': 0,
+  'OANDA:NAS100_USD': 0,
+};
+
+export const LOCK_OFFSET_R_BY_SYMBOL: Record<string, number> = {
+  'OANDA:XAUUSD': 0,
+  'OANDA:NAS100_USD': 0,
+};
+
+export const ATR_TRAIL_START_R_BY_SYMBOL: Record<string, number> = {
+  // Start ATR trailing at +3R (TP2 stage)
+  'OANDA:XAUUSD': 3.0,
+  'OANDA:NAS100_USD': 3.0,
+};
+
+export const ATR_MULT_BY_SYMBOL: Record<string, number> = {
+  // ATR(14) multiplier fixed at 1.5
+  'OANDA:XAUUSD': 1.5,
+  'OANDA:NAS100_USD': 1.5,
+};
