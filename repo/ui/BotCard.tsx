@@ -47,6 +47,16 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
       const windowEnd = new Date(open.getTime() + 3 * 60 * 60_000);
       return d >= orEnd && d <= windowEnd;
     }
+    if (id === 'london-liquidity-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d);
+      const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      const weekday = get('weekday').toLowerCase();
+      const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri');
+      const mins = hour * 60 + minute;
+      return isWeekday && mins >= (6 * 60 + 45) && mins <= (9 * 60);
+    }
     const hour = d.getUTCHours(); const min = d.getUTCMinutes();
     if (id === 'trendatr_xau') return hour >= 12 && hour < 20;
     if (id === 'trendatr_nas') return ((hour > 14) || (hour === 14 && min >= 30)) && hour < 20;
@@ -68,6 +78,36 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
       const open = getNyOpenUtc(monday);
       return new Date(open.getTime() + 15 * 60_000);
     }
+    if (id === 'london-liquidity-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(from);
+      const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      const weekday = get('weekday').toLowerCase();
+      const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri');
+      const mins = hour * 60 + minute;
+      const target = 6 * 60 + 45;
+      if (isWeekday && mins <= target) {
+        const deltaMin = target - mins;
+        return new Date(from.getTime() + deltaMin * 60_000);
+      }
+      for (let i = 1; i <= 8; i++) {
+        const d = new Date(from.getTime() + i * 24 * 60 * 60_000);
+        const parts2 = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d);
+        const get2 = (t: string) => parts2.find(p => p.type === t)?.value || '';
+        const weekday2 = get2('weekday').toLowerCase();
+        const isWeekday2 = weekday2.startsWith('mon') || weekday2.startsWith('tue') || weekday2.startsWith('wed') || weekday2.startsWith('thu') || weekday2.startsWith('fri');
+        if (isWeekday2) {
+          const partsMidnight = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d);
+          const h2 = Number(partsMidnight.find(p => p.type === 'hour')?.value || '0');
+          const m2 = Number(partsMidnight.find(p => p.type === 'minute')?.value || '0');
+          const mins2 = h2 * 60 + m2;
+          const deltaMin = (24 * 60 - mins) + (i - 1) * 24 * 60 + (target);
+          return new Date(from.getTime() + deltaMin * 60_000);
+        }
+      }
+      return new Date(from.getTime() + 24 * 60 * 60_000);
+    }
     const advanceToWeekday = (x: Date) => { let y = new Date(x); let day = y.getUTCDay(); while (day === 0 || day === 6) { y.setUTCDate(y.getUTCDate() + 1); day = y.getUTCDay(); } return y; };
     const base = advanceToWeekday(from);
     if (id === 'trendatr_xau') { const d = new Date(base); d.setUTCHours(12,0,0,0); if (from <= d) return d; d.setUTCDate(d.getUTCDate() + 1); return advanceToWeekday(d); }
@@ -81,6 +121,16 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
       const open = getNyOpenUtc(from);
       return new Date(open.getTime() + 3 * 60 * 60_000);
     }
+    if (id === 'london-liquidity-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(from);
+      const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      const mins = hour * 60 + minute;
+      const endMins = 9 * 60;
+      const deltaMin = Math.max(0, endMins - mins);
+      return new Date(from.getTime() + deltaMin * 60_000);
+    }
     const t = new Date(from); t.setUTCHours(20,0,0,0); return t;
   };
   const fmtCountdown = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = s % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
@@ -92,6 +142,7 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
   const subtext = id === 'fixed' ? 'NY OR Window • Mon–Fri'
     : id === 'fixed-xau' ? 'XAUUSD • NY OR Window • Mon–Fri'
     : id === 'fixed-nas' ? 'NAS100 • NY OR Window • Mon–Fri'
+    : id === 'london-liquidity-xau' ? 'XAUUSD • London 06:45–09:00 • Mon–Fri'
     : id === 'trendatr_xau' ? 'XAUUSD • 15m • 12:00–20:00 UTC'
     : id === 'trendatr_nas' ? 'NAS100 • 15m • 14:30–20:00 UTC'
     : id === 'orb' ? 'XAUUSD • 15m • 12:15–20:00 UTC'
@@ -107,6 +158,16 @@ const pnlColor = pnl > 0 ? 'text-accent-green' : pnl < 0 ? 'text-red-300' : 'tex
       return new Date(open.getTime() + 15 * 60_000);
     }
     const d = new Date(now);
+    if (id === 'london-liquidity-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(now);
+      const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      const mins = hour * 60 + minute;
+      const target = 6 * 60 + 45;
+      const deltaMin = mins >= target ? 0 : (target - mins);
+      return new Date(now.getTime() - deltaMin * 60_000);
+    }
     if (id === 'trendatr_xau') { d.setUTCHours(12,0,0,0); }
     else if (id === 'trendatr_nas') { d.setUTCHours(14,30,0,0); }
     else if (id === 'orb') { d.setUTCHours(12,15,0,0); }
@@ -120,6 +181,16 @@ const pnlColor = pnl > 0 ? 'text-accent-green' : pnl < 0 ? 'text-red-300' : 'tex
       return new Date(open.getTime() + 3 * 60 * 60_000);
     }
     const t = new Date(now);
+    if (id === 'london-liquidity-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(now);
+      const get = (t2: string) => parts.find(p => p.type === t2)?.value || '';
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      const mins = hour * 60 + minute;
+      const endMins = 9 * 60;
+      const deltaMin = Math.max(0, endMins - mins);
+      return new Date(now.getTime() + deltaMin * 60_000);
+    }
     if (id === 'vwapReversion') { t.setUTCHours(17,0,0,0); } else { t.setUTCHours(20,0,0,0); }
     return t;
   }, [now, id]);

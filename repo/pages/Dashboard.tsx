@@ -152,24 +152,28 @@ const Dashboard: React.FC = () => {
       return new Date(open.getTime() + 15 * 60_000);
     }
     if (id === 'london-liquidity-xau') {
-      const base = new Date(from)
-      for (let i = 0; i < 8; i++) {
-        const d = new Date(base.getTime())
-        d.setDate(base.getDate() + i)
-        const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d)
-        const get = (t: string) => parts.find(p => p.type === t)?.value || ''
-        const weekday = get('weekday').toLowerCase()
-        const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
-        if (!isWeekday) continue
-        const openLocal = new Date(d)
-        const locale = 'Europe/London'
-        const zoneDate = new Date(new Intl.DateTimeFormat('en-GB', { timeZone: locale }).format(openLocal))
-        const hh = 6; const mm = 45
-        const openGuess = new Date(openLocal)
-        openGuess.setHours(hh, mm, 0, 0)
-        return openGuess
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(from)
+      const get = (t: string) => parts.find(p => p.type === t)?.value || ''
+      const hour = Number(get('hour'))
+      const minute = Number(get('minute'))
+      const weekday = get('weekday').toLowerCase()
+      const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
+      const mins = hour * 60 + minute
+      const target = 6 * 60 + 45
+      if (isWeekday && mins <= target) {
+        const deltaMin = target - mins
+        return new Date(from.getTime() + deltaMin * 60_000)
       }
-      return new Date(from)
+      for (let i = 1; i <= 8; i++) {
+        const d = new Date(from.getTime() + i * 24 * 60 * 60_000)
+        const parts2 = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d)
+        const get2 = (t: string) => parts2.find(p => p.type === t)?.value || ''
+        const weekday2 = get2('weekday').toLowerCase()
+        const isWeekday2 = weekday2.startsWith('mon') || weekday2.startsWith('tue') || weekday2.startsWith('wed') || weekday2.startsWith('thu') || weekday2.startsWith('fri')
+        if (!isWeekday2) continue
+        return new Date(d.getTime() + (6 * 60 + 45 - (Number(get2('hour')) * 60 + Number(get2('minute')))) * 60_000)
+      }
+      return new Date(from.getTime() + 24 * 60 * 60_000)
     }
     return new Date(from);
   };
