@@ -7,6 +7,7 @@ dotenv.config({ path: '.env.local.user', override: true });
 import { TIMEFRAME_BY_SYMBOL } from '../constants';
 import { fixedOrbFvgLvnXauBot } from '../bots/fixedOrbFvgLvnXau';
 import { fixedOrbFvgLvnNasBot } from '../bots/fixedOrbFvgLvnNas';
+import { londonLiquiditySweepXauBot } from '../bots/londonLiquiditySweepXau';
 import { executeAiTrade, runPriceCheckAdmin } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
@@ -55,8 +56,20 @@ const alreadyRanThisInterval = () => {
   return false;
 };
 
+const isLondonSessionWindow = () => {
+  const now = new Date()
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(now)
+  const get = (t: string) => parts.find(p => p.type === t)?.value || ''
+  const hour = Number(get('hour'))
+  const minute = Number(get('minute'))
+  const weekday = get('weekday').toLowerCase()
+  const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
+  const mins = hour * 60 + minute
+  return isWeekday && mins >= (6 * 60 + 45) && mins <= (9 * 60)
+}
+
 const getWindowName = (): 'forex' | 'none' => {
-  return isNySessionWindow() ? 'forex' : 'none';
+  return (isNySessionWindow() || isLondonSessionWindow()) ? 'forex' : 'none';
 };
 
 // Kill switches removed per fixed-strategy requirement
@@ -64,7 +77,7 @@ const getWindowName = (): 'forex' | 'none' => {
 async function tick() {
   const windowName = getWindowName();
   const msgs: string[] = [];
-  const botsXau = [fixedOrbFvgLvnXauBot];
+  const botsXau = [fixedOrbFvgLvnXauBot, londonLiquiditySweepXauBot];
   const botsNas = [fixedOrbFvgLvnNasBot];
 
   if (!enabled) {
@@ -155,6 +168,13 @@ async function tick() {
           msgs.push(`skip: daily per-side cap reached for ${op.symbol} (${sideStr})`);
           continue;
         }
+        if (botId === 'london-liquidity-xau') {
+          const placedByStrategy = await db.countPositionsPlacedTodayByStrategy(botId)
+          if (placedByStrategy >= 1) {
+            msgs.push('skip: london-liquidity-xau daily cap reached')
+            continue
+          }
+        }
       } catch (err) {
         console.warn('[Scheduler] Per-side daily count failed:', err);
       }
@@ -205,9 +225,10 @@ function getNextForexStartUtc(now: Date): Date {
 function scheduleNext() {
   const windowName = getWindowName();
   if (windowName === 'none') {
-    const delay = getNextForexStartUtc(new Date()).getTime() - Date.now();
-    const safeDelay = Math.max(delay, 30_000);
-    console.log(`[Scheduler] Outside NY OR window. Next tick in ${(safeDelay / 60000).toFixed(1)} min.`);
+    const delayNy = getNextForexStartUtc(new Date()).getTime() - Date.now();
+    const fallbackShort = 5 * 60_000;
+    const safeDelay = Math.max(Math.min(delayNy, 60 * 60_000), fallbackShort);
+    console.log(`[Scheduler] Windows closed. Next tick in ${(safeDelay / 60000).toFixed(1)} min.`);
     setTimeout(() => {
       tick().catch(err => console.error('[Scheduler] Tick error:', err)).finally(scheduleNext);
     }, safeDelay);

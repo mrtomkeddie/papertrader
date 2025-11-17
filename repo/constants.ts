@@ -33,6 +33,7 @@ export const TIMEFRAME_BY_SYMBOL: Record<string, string> = {
 export const SELECTED_METHODS = [
   // Only the new fixed strategy
   'FIXED ORB + FVG + LVN',
+  'London Liquidity Sweep (Gold)'
 ];
 
 // Symbol-specific protection parameters for live trailing and stop logic

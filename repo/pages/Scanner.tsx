@@ -58,7 +58,15 @@ const Scanner: React.FC = () => {
     const orEnd = new Date(nyOpen.getTime() + 15 * 60_000);
     const windowEnd = new Date(nyOpen.getTime() + 3 * 60 * 60_000);
     const isNySessionWindow = forceWindow || (currentDayUTC >= 1 && currentDayUTC <= 5 && now >= orEnd && now <= windowEnd);
-    
+
+    const londonParts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(now)
+    const getPart = (t: string) => londonParts.find(p => p.type === t)?.value || ''
+    const lh = Number(getPart('hour'))
+    const lm = Number(getPart('minute'))
+    const lw = getPart('weekday').toLowerCase()
+    const isWeekdayLondon = lw.startsWith('mon') || lw.startsWith('tue') || lw.startsWith('wed') || lw.startsWith('thu') || lw.startsWith('fri')
+    const isLondonWindow = isWeekdayLondon && (lh * 60 + lm) >= (6 * 60 + 45) && (lh * 60 + lm) <= (9 * 60)
+
     let marketsToScan = [] as typeof SELECTED_INSTRUMENTS;
     let scannedMarketTypes: string[] = [];
 
@@ -66,9 +74,13 @@ const Scanner: React.FC = () => {
         marketsToScan.push(...SELECTED_INSTRUMENTS);
         scannedMarketTypes.push('NY OR Window');
     }
+    if (isLondonWindow) {
+        marketsToScan.push({ symbol: 'OANDA:XAUUSD', description: 'Gold / US Dollar', category: 'Metals' });
+        scannedMarketTypes.push('London Morning (Gold)');
+    }
 
     if (marketsToScan.length === 0) {
-        setError("No markets are in the NY opening range window. Try again when the window is active.");
+        setError("No markets are in an active window. Try again when the NY OR or London window is active.");
         setIsScanning(false);
         return;
     }

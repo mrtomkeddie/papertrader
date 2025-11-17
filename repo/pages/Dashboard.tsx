@@ -100,7 +100,7 @@ const Dashboard: React.FC = () => {
     || '') as string;
   const enabledIds = enabledStr
     ? enabledStr.toLowerCase().split(',').map(s => s.trim()).filter(Boolean)
-    : ['fixed-xau','fixed-nas'];
+    : ['fixed-xau','fixed-nas','london-liquidity-xau'];
   const isEnabled = (id: string) => enabledIds.includes(id.toLowerCase());
   const inForexDay = (d: Date) => { const day = d.getUTCDay(); return day >= 1 && day <= 5; };
   const getNyOpenUtc = (date: Date): Date => {
@@ -125,6 +125,16 @@ const Dashboard: React.FC = () => {
       const windowEnd = new Date(open.getTime() + 3 * 60 * 60_000);
       return d >= orEnd && d <= windowEnd;
     }
+    if (id === 'london-liquidity-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d)
+      const get = (t: string) => parts.find(p => p.type === t)?.value || ''
+      const hour = Number(get('hour'))
+      const minute = Number(get('minute'))
+      const weekday = get('weekday').toLowerCase()
+      const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
+      const mins = hour * 60 + minute
+      return isWeekday && mins >= (6 * 60 + 45) && mins <= (9 * 60)
+    }
     return false;
   };
   const nextWindowOpen = (id: string, from: Date) => {
@@ -141,6 +151,26 @@ const Dashboard: React.FC = () => {
       const open = getNyOpenUtc(monday);
       return new Date(open.getTime() + 15 * 60_000);
     }
+    if (id === 'london-liquidity-xau') {
+      const base = new Date(from)
+      for (let i = 0; i < 8; i++) {
+        const d = new Date(base.getTime())
+        d.setDate(base.getDate() + i)
+        const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d)
+        const get = (t: string) => parts.find(p => p.type === t)?.value || ''
+        const weekday = get('weekday').toLowerCase()
+        const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
+        if (!isWeekday) continue
+        const openLocal = new Date(d)
+        const locale = 'Europe/London'
+        const zoneDate = new Date(new Intl.DateTimeFormat('en-GB', { timeZone: locale }).format(openLocal))
+        const hh = 6; const mm = 45
+        const openGuess = new Date(openLocal)
+        openGuess.setHours(hh, mm, 0, 0)
+        return openGuess
+      }
+      return new Date(from)
+    }
     return new Date(from);
   };
 
@@ -152,6 +182,10 @@ const Dashboard: React.FC = () => {
     { id: 'fixed-nas', name: 'Fixed ORB + FVG + LVN (NAS100)', match: (p: Position) => {
       const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
       return text.includes('fixed-orb-fvg-lvn') && ((p.symbol ?? '').toUpperCase().includes('NAS'));
+    } },
+    { id: 'london-liquidity-xau', name: 'London Liquidity Sweep (Gold)', match: (p: Position) => {
+      const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
+      return text.includes('london-liquidity-xau') && ((p.symbol ?? '').toUpperCase().includes('XAU'));
     } },
   ];
   const MAX_TRADES_CAP = Number((import.meta.env as any).VITE_AUTOPILOT_MAX_TRADES_PER_SESSION ?? (import.meta.env as any).AUTOPILOT_MAX_TRADES_PER_SESSION ?? 5);

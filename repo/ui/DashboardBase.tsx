@@ -25,7 +25,7 @@ export default function DashboardBase({ title, strategyFilter }: {
     const enabledStr = ((import.meta.env as any).VITE_AUTOPILOT_ENABLED_STR || (import.meta.env as any).AUTOPILOT_ENABLED_STR || '') as string;
     return enabledStr
       ? enabledStr.toLowerCase().split(',').map(s => s.trim()).filter(Boolean)
-      : ['fixed-xau','fixed-nas'];
+      : ['fixed-xau','fixed-nas','london-liquidity-xau'];
   }, []);
   const isEnabled = (id: string) => enabledIds.includes(id.toLowerCase());
 
@@ -51,6 +51,16 @@ export default function DashboardBase({ title, strategyFilter }: {
       const orEnd = new Date(open.getTime() + 15 * 60_000);
       const windowEnd = new Date(open.getTime() + 3 * 60 * 60_000);
       return d >= orEnd && d <= windowEnd;
+    }
+    if (id === 'london-liquidity-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d)
+      const get = (t: string) => parts.find(p => p.type === t)?.value || ''
+      const hour = Number(get('hour'))
+      const minute = Number(get('minute'))
+      const weekday = get('weekday').toLowerCase()
+      const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
+      const mins = hour * 60 + minute
+      return isWeekday && mins >= (6 * 60 + 45) && mins <= (9 * 60)
     }
     return false;
   };
@@ -167,9 +177,13 @@ export default function DashboardBase({ title, strategyFilter }: {
         const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
         return text.includes('fixed-orb-fvg-lvn') && ((p.symbol ?? '').toUpperCase().includes('NAS'));
       } },
+      { id: 'london-liquidity-xau', name: 'London Liquidity Sweep (Gold)', match: (p: Position) => {
+        const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
+        return text.includes('london-liquidity-xau') && ((p.symbol ?? '').toUpperCase().includes('XAU'));
+      } },
     ];
     const t = title.toLowerCase();
-    if (t.includes('gold')) return [defs[0]];
+    if (t.includes('gold')) return [defs[0], defs[2]];
     if (t.includes('nas')) return [defs[1]];
     return defs;
   }, [title]);
