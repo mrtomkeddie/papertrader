@@ -277,7 +277,7 @@ const Dashboard: React.FC = () => {
       {/* Bots Overview (Main Focus) moved to top */}
       <div className="card-premium p-5 sm:p-6 rounded-lg shadow-lg">
         <h3 className="text-lg font-semibold text-white mb-4">Bots Overview</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid gap-3 sm:gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(1, botMetrics.length)}, minmax(0, 1fr))` }}>
           {botMetrics.map(b => (
             <button key={b.id} onClick={() => setSelectedBot(b.id)} className="text-left">
               <div className="card-premium p-4 rounded-lg shadow-lg transition">
