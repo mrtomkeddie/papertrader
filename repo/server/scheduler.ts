@@ -8,6 +8,7 @@ import { TIMEFRAME_BY_SYMBOL } from '../constants';
 import { fixedOrbFvgLvnXauBot } from '../bots/fixedOrbFvgLvnXau';
 import { fixedOrbFvgLvnNasBot } from '../bots/fixedOrbFvgLvnNas';
 import { londonLiquiditySweepXauBot } from '../bots/londonLiquiditySweepXau';
+import { londonContinuationXauBot } from '../bots/londonContinuationXau';
 import { executeAiTrade, runPriceCheckAdmin } from './tradingServiceAdmin';
 import * as db from './adminDatabase';
 import type { Opportunity } from '../types';
@@ -68,8 +69,20 @@ const isLondonSessionWindow = () => {
   return isWeekday && mins >= (6 * 60 + 45) && mins <= (9 * 60)
 }
 
+const isLondonContinuationWindow = () => {
+  const now = new Date()
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(now)
+  const get = (t: string) => parts.find(p => p.type === t)?.value || ''
+  const hour = Number(get('hour'))
+  const minute = Number(get('minute'))
+  const weekday = get('weekday').toLowerCase()
+  const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
+  const mins = hour * 60 + minute
+  return isWeekday && mins >= (8 * 60 + 30) && mins <= (11 * 60)
+}
+
 const getWindowName = (): 'forex' | 'none' => {
-  return (isNySessionWindow() || isLondonSessionWindow()) ? 'forex' : 'none';
+  return (isNySessionWindow() || isLondonSessionWindow() || isLondonContinuationWindow()) ? 'forex' : 'none';
 };
 
 // Kill switches removed per fixed-strategy requirement
@@ -77,7 +90,7 @@ const getWindowName = (): 'forex' | 'none' => {
 async function tick() {
   const windowName = getWindowName();
   const msgs: string[] = [];
-  const botsXau = [fixedOrbFvgLvnXauBot, londonLiquiditySweepXauBot];
+  const botsXau = [fixedOrbFvgLvnXauBot, londonLiquiditySweepXauBot, londonContinuationXauBot];
   const botsNas = [fixedOrbFvgLvnNasBot];
 
   if (!enabled) {
@@ -134,9 +147,15 @@ async function tick() {
         const signals = await bot.scan();
         const trades = bot.selectSignals(signals);
         for (const trade of trades) {
-          ops.push({ symbol, action: { action: 'TRADE', trade }, extra: { botId: bot.id } as any });
+          ops.push({ symbol, action: { action: 'TRADE', trade }, extra: { botId: bot.id } } as any);
         }
         if (trades.length === 0) msgs.push(`bot ${bot.id} (${symbol}): no trades`);
+        if (typeof (bot as any).diagnostics === 'function') {
+          try {
+            const diags = (bot as any).diagnostics() as string[];
+            for (const d of diags.slice(-10)) msgs.push(`[${bot.id}] ${d}`);
+          } catch {}
+        }
       } catch (e) {
         msgs.push(`Scan error for bot ${bot.id} (${symbol})`);
         console.warn('[Scheduler] Scan error for bot', bot.id, symbol, e);
@@ -170,9 +189,36 @@ async function tick() {
         }
         if (botId === 'london-liquidity-xau') {
           const placedByStrategy = await db.countPositionsPlacedTodayByStrategy(botId)
-          if (placedByStrategy >= 1) {
-            msgs.push('skip: london-liquidity-xau daily cap reached')
+          if (placedByStrategy >= 3) {
+            msgs.push('[london-liquidity-xau] skip: daily cap reached (>=3)')
             continue
+          }
+          try {
+            const open = await db.getOpenPositions();
+            const hasOpenForStrategy = open.some(p => (p.method_name ?? p.strategy_id ?? '').toLowerCase() === botId);
+            if (hasOpenForStrategy) {
+              msgs.push('[london-liquidity-xau] skip: already in position (strategy open)')
+              continue
+            }
+          } catch (err) {
+            console.warn('[Scheduler] Open position check failed:', err);
+          }
+        }
+        if (botId === 'london-continuation-xau') {
+          const placedByStrategy = await db.countPositionsPlacedTodayByStrategy(botId)
+          if (placedByStrategy >= 2) {
+            msgs.push('[london-continuation-xau] skip: daily cap reached (>=2)')
+            continue
+          }
+          try {
+            const open = await db.getOpenPositions();
+            const hasOpenForStrategy = open.some(p => (p.method_name ?? p.strategy_id ?? '').toLowerCase() === botId);
+            if (hasOpenForStrategy) {
+              msgs.push('[london-continuation-xau] skip: already in position (strategy open)')
+              continue
+            }
+          } catch (err) {
+            console.warn('[Scheduler] Open position check failed:', err);
           }
         }
       } catch (err) {

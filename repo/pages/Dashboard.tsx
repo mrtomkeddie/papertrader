@@ -100,7 +100,7 @@ const Dashboard: React.FC = () => {
     || '') as string;
   const enabledIds = enabledStr
     ? enabledStr.toLowerCase().split(',').map(s => s.trim()).filter(Boolean)
-    : ['fixed-xau','fixed-nas','london-liquidity-xau'];
+    : ['fixed-xau','fixed-nas','london-liquidity-xau','london-continuation-xau'];
   const isEnabled = (id: string) => enabledIds.includes(id.toLowerCase());
   const inForexDay = (d: Date) => { const day = d.getUTCDay(); return day >= 1 && day <= 5; };
   const getNyOpenUtc = (date: Date): Date => {
@@ -134,6 +134,16 @@ const Dashboard: React.FC = () => {
       const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
       const mins = hour * 60 + minute
       return isWeekday && mins >= (6 * 60 + 45) && mins <= (9 * 60)
+    }
+    if (id === 'london-continuation-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d)
+      const get = (t: string) => parts.find(p => p.type === t)?.value || ''
+      const hour = Number(get('hour'))
+      const minute = Number(get('minute'))
+      const weekday = get('weekday').toLowerCase()
+      const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri')
+      const mins = hour * 60 + minute
+      return isWeekday && mins >= (8 * 60 + 30) && mins <= (11 * 60)
     }
     return false;
   };
@@ -190,6 +200,10 @@ const Dashboard: React.FC = () => {
     { id: 'london-liquidity-xau', name: 'London Liquidity Sweep (Gold)', match: (p: Position) => {
       const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
       return text.includes('london-liquidity-xau') && ((p.symbol ?? '').toUpperCase().includes('XAU'));
+    } },
+    { id: 'london-continuation-xau', name: 'London Continuation (Gold)', match: (p: Position) => {
+      const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
+      return text.includes('london-continuation-xau') && ((p.symbol ?? '').toUpperCase().includes('XAU'));
     } },
   ];
   const MAX_TRADES_CAP = Number((import.meta.env as any).VITE_AUTOPILOT_MAX_TRADES_PER_SESSION ?? (import.meta.env as any).AUTOPILOT_MAX_TRADES_PER_SESSION ?? 5);

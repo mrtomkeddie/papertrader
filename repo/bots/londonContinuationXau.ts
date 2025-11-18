@@ -1,6 +1,6 @@
 import { Bot } from './types'
 import { StrategySignal } from '../types'
-import { evaluateLondonLiquiditySweepDiag } from '../strategies/londonLiquiditySweepXau'
+import { evaluateLondonContinuationDiag } from '../strategies/londonContinuationXau'
 
 function londonParts(d: Date) {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d)
@@ -11,21 +11,23 @@ function londonParts(d: Date) {
   const wk = weekday.toLowerCase()
   const isWeekday = wk.startsWith('mon') || wk.startsWith('tue') || wk.startsWith('wed') || wk.startsWith('thu') || wk.startsWith('fri')
   const mins = hour * 60 + minute
-  const inside = isWeekday && mins >= (6 * 60 + 45) && mins <= (9 * 60)
+  const inside = isWeekday && mins >= (8 * 60 + 30) && mins <= (11 * 60)
   return { inside }
 }
 
-export const londonLiquiditySweepXauBot: Bot = {
-  id: 'london-liquidity-xau',
+let lastDiag: string[] = []
+
+export const londonContinuationXauBot: Bot = {
+  id: 'london-continuation-xau',
   isEnabled() {
     const list = (process.env.VITE_ENABLED_BOTS || process.env.AUTOPILOT_ENABLED_BOTS || '').toLowerCase()
-    return list ? list.split(',').map(s => s.trim()).includes('london-liquidity-xau') : true
+    return list ? list.split(',').map(s => s.trim()).includes('london-continuation-xau') : true
   },
   isWindowOpen(now: Date) {
     return londonParts(now).inside
   },
   async scan(): Promise<StrategySignal[]> {
-    const { signal, logs } = await evaluateLondonLiquiditySweepDiag('OANDA:XAUUSD')
+    const { signal, logs } = await evaluateLondonContinuationDiag('OANDA:XAUUSD')
     lastDiag = logs
     return signal ? [signal] : []
   },
@@ -36,7 +38,7 @@ export const londonLiquiditySweepXauBot: Bot = {
       stop_price: s.stop,
       tp_price: s.tp,
       reason: s.reason,
-      strategy_type: 'London Liquidity Sweep (Gold)',
+      strategy_type: 'London Continuation (Gold)',
       slippage_bps: 5,
       fee_bps: 10,
       risk_reward_ratio: s.rrr ?? 0,
@@ -45,4 +47,3 @@ export const londonLiquiditySweepXauBot: Bot = {
   },
   diagnostics() { return lastDiag }
 }
-let lastDiag: string[] = []

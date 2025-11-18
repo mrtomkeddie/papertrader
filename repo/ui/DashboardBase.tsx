@@ -25,7 +25,7 @@ export default function DashboardBase({ title, strategyFilter }: {
     const enabledStr = ((import.meta.env as any).VITE_AUTOPILOT_ENABLED_STR || (import.meta.env as any).AUTOPILOT_ENABLED_STR || '') as string;
     return enabledStr
       ? enabledStr.toLowerCase().split(',').map(s => s.trim()).filter(Boolean)
-      : ['fixed-xau','fixed-nas','london-liquidity-xau'];
+      : ['fixed-xau','fixed-nas','london-liquidity-xau','london-continuation-xau'];
   }, []);
   const isEnabled = (id: string) => enabledIds.includes(id.toLowerCase());
 
@@ -181,9 +181,13 @@ export default function DashboardBase({ title, strategyFilter }: {
         const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
         return text.includes('london-liquidity-xau') && ((p.symbol ?? '').toUpperCase().includes('XAU'));
       } },
+      { id: 'london-continuation-xau', name: 'London Continuation (Gold)', match: (p: Position) => {
+        const text = ((p.method_name ?? p.strategy_id ?? '') as string).toLowerCase();
+        return text.includes('london-continuation-xau') && ((p.symbol ?? '').toUpperCase().includes('XAU'));
+      } },
     ];
     const t = title.toLowerCase();
-    if (t.includes('gold')) return [defs[0], defs[2]];
+    if (t.includes('gold')) return [defs[0], defs[2], defs[3]];
     if (t.includes('nas')) return [defs[1]];
     return defs;
   }, [title]);
@@ -361,7 +365,11 @@ export default function DashboardBase({ title, strategyFilter }: {
           <h3 className="text-lg font-semibold text-white mb-4">Bots Overview</h3>
           <div className={`grid gap-4`} style={{ gridTemplateColumns: `repeat(${Math.max(1, botMetrics.length)}, minmax(0, 1fr))` }}>
             {botMetrics.map(b => (
-              <BotCard key={b.id} {...b} />
+              <BotCard
+                key={b.id}
+                {...b}
+                skipReasons={(schedulerActivity?.messages ?? []).filter((m: string) => m.toLowerCase().includes(b.id.toLowerCase()))}
+              />
             ))}
           </div>
         </div>

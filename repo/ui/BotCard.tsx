@@ -62,6 +62,16 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
     if (id === 'trendatr_nas') return ((hour > 14) || (hour === 14 && min >= 30)) && hour < 20;
     if (id === 'orb') return (hour >= 12 && hour < 20) && (hour > 12 || (hour === 12 && min >= 15));
     if (id === 'vwapReversion') return hour >= 14 && hour < 17;
+    if (id === 'london-continuation-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d);
+      const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      const weekday = get('weekday').toLowerCase();
+      const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri');
+      const mins = hour * 60 + minute;
+      return isWeekday && mins >= (8 * 60 + 30) && mins <= (11 * 60);
+    }
     return false;
   };
   const nextOpen = (id: string, from: Date) => {
@@ -108,6 +118,31 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
       }
       return new Date(from.getTime() + 24 * 60 * 60_000);
     }
+    if (id === 'london-continuation-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(from);
+      const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      const weekday = get('weekday').toLowerCase();
+      const isWeekday = weekday.startsWith('mon') || weekday.startsWith('tue') || weekday.startsWith('wed') || weekday.startsWith('thu') || weekday.startsWith('fri');
+      const mins = hour * 60 + minute;
+      const target = 8 * 60 + 30;
+      if (isWeekday && mins <= target) {
+        const deltaMin = target - mins;
+        return new Date(from.getTime() + deltaMin * 60_000);
+      }
+      for (let i = 1; i <= 8; i++) {
+        const d = new Date(from.getTime() + i * 24 * 60 * 60_000);
+        const parts2 = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(d);
+        const get2 = (t: string) => parts2.find(p => p.type === t)?.value || '';
+        const weekday2 = get2('weekday').toLowerCase();
+        const isWeekday2 = weekday2.startsWith('mon') || weekday2.startsWith('tue') || weekday2.startsWith('wed') || weekday2.startsWith('thu') || weekday2.startsWith('fri');
+        if (isWeekday2) {
+          return new Date(d.getTime());
+        }
+      }
+      return new Date(from.getTime() + 24 * 60 * 60_000);
+    }
     const advanceToWeekday = (x: Date) => { let y = new Date(x); let day = y.getUTCDay(); while (day === 0 || day === 6) { y.setUTCDate(y.getUTCDate() + 1); day = y.getUTCDay(); } return y; };
     const base = advanceToWeekday(from);
     if (id === 'trendatr_xau') { const d = new Date(base); d.setUTCHours(12,0,0,0); if (from <= d) return d; d.setUTCDate(d.getUTCDate() + 1); return advanceToWeekday(d); }
@@ -131,6 +166,16 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
       const deltaMin = Math.max(0, endMins - mins);
       return new Date(from.getTime() + deltaMin * 60_000);
     }
+    if (id === 'london-continuation-xau') {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false }).formatToParts(from);
+      const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+      const hour = Number(get('hour'));
+      const minute = Number(get('minute'));
+      const mins = hour * 60 + minute;
+      const endMins = 11 * 60;
+      const deltaMin = Math.max(0, endMins - mins);
+      return new Date(from.getTime() + deltaMin * 60_000);
+    }
     const t = new Date(from); t.setUTCHours(20,0,0,0); return t;
   };
   const fmtCountdown = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = s % 60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
@@ -144,6 +189,7 @@ const BotCard: React.FC<BotCardProps> = ({ id, name, status, indicator, tradesTo
     : id === 'fixed-nas' ? 'NAS100 • NY OR Window • Mon–Fri'
     : id === 'london-liquidity-xau' ? 'XAUUSD • London 06:45–09:00 • Mon–Fri'
     : id === 'trendatr_xau' ? 'XAUUSD • 15m • 12:00–20:00 UTC'
+    : id === 'london-continuation-xau' ? 'XAUUSD • London 08:30–11:00 • Mon–Fri'
     : id === 'trendatr_nas' ? 'NAS100 • 15m • 14:30–20:00 UTC'
     : id === 'orb' ? 'XAUUSD • 15m • 12:15–20:00 UTC'
     : id === 'vwapReversion' ? 'XAUUSD • 15m • 14:00–17:00 UTC' : '';
